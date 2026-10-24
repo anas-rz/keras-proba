@@ -35,8 +35,7 @@ jobs:
           python -m pip install --upgrade pip
           # CPU-only torch keeps the install small.
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          # TensorFlow and tf_keras are needed by every backend: tf_keras is the parity reference.
-          pip install keras tensorflow tf_keras jax numpy pytest
+          pip install -e ".[dev]"
 
       - name: Run tests
         run: python -m pytest tests -v

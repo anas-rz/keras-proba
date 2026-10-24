@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "keras-proba"
+version = "0.1.0"
+description = "Uncertainty awareness in deep learning with multi-backend Keras 3"
+readme = "README.md"
+authors = [
+    { name = "Muhammad Anas Raza", email = "memanasraza@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "keras>=3.0.0",
+    "numpy",
+]
+
+[project.optional-dependencies]
+torch = ["torch"]
+jax = ["jax", "jaxlib"]
+tensorflow = ["tensorflow"]
+dev = [
+    "pytest",
+    # Every backend is installed so tests can run under any KERAS_BACKEND;
+    # tf_keras is the reference implementation for parity tests.
+    "tensorflow",
+    "tf_keras",
+    "jax",
+    "torch",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["keras_proba*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
