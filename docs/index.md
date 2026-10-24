@@ -35,10 +35,10 @@ parity with them.
 ## Installation
 
 ```bash
-pip install "git+https://github.com/anas-rz/keras-proba.git"
+pip install keras-proba
 ```
 
-Keras 3 needs one backend; install it with an extra, e.g. `pip install "keras-proba[jax] @ git+https://github.com/anas-rz/keras-proba.git"` (`[torch]`, `[jax]` or `[tensorflow]`).
+Keras 3 needs one backend; install it with an extra, e.g. `pip install "keras-proba[jax]"` (`[torch]`, `[jax]` or `[tensorflow]`).
 
 ---
 

@@ -2,11 +2,13 @@
 
 Documentation: https://anas-rz.github.io/keras-proba/
 
-Install directly from GitHub:
+Install from PyPI:
 
 ```bash
-pip install "git+https://github.com/anas-rz/keras-proba.git"
+pip install keras-proba
 ```
+
+Keras 3 needs a backend; install one with an extra, e.g. `pip install "keras-proba[jax]"` (`[torch]`, `[jax]` or `[tensorflow]`).
 
 ## Layers
 
