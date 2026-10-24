@@ -1,6 +1,6 @@
-# Keras Uncertainty: Uncertainty Awareness in Deep Learning
+# Keras Probability: Uncertainty Awareness in Deep Learning
 
-Should be available via `pip install git+https://github.com/anas-rz/keras-uncertainty.git`
+Should be available via `pip install git+https://github.com/anas-rz/keras-proba.git`
 
 # Layers
 
