@@ -1,5 +1,7 @@
 # Keras Uncertainty: Uncertainty Awareness in Deep Learning
 
+Should be available via `pip install git+https://github.com/anas-rz/keras-uncertainty.git`
+
 # Layers
 
 *  [ ] SNGP
