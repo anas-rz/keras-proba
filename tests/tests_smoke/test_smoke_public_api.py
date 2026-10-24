@@ -5,6 +5,7 @@ is deliberate.
 """
 
 import inspect
+import re
 import sys
 from pathlib import Path
 
@@ -125,10 +126,53 @@ def test_public_classes_are_serializable():
             assert keras.saving.get_registered_name(obj) == f"keras_proba>{name}"
 
 
-def test_version_matches_pyproject():
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def load_pyproject():
     tomllib = pytest.importorskip("tomllib") if sys.version_info >= (3, 11) else pytest.importorskip("tomli")
-    with open(Path(__file__).resolve().parents[2] / "pyproject.toml", "rb") as f:
-        assert keras_proba.__version__ == tomllib.load(f)["project"]["version"]
+    with open(REPO_ROOT / "pyproject.toml", "rb") as f:
+        return tomllib.load(f)
+
+
+def test_version_has_a_single_source():
+    """`keras_proba/version.py` is the only place the version is written."""
+    from keras_proba import version
+
+    assert keras_proba.__version__ is version.__version__
+    assert re.fullmatch(r"\d+\.\d+\.\d+((a|b|rc)\d+)?(\.post\d+)?(\.dev\d+)?", version.__version__)
+
+    # pyproject.toml declares the version dynamic and reads it from version.py.
+    pyproject = load_pyproject()
+    assert "version" not in pyproject["project"]
+    assert "version" in pyproject["project"]["dynamic"]
+    assert pyproject["tool"]["setuptools"]["dynamic"]["version"] == {"attr": "keras_proba.version.__version__"}
+
+    # No other file of the package or its metadata defines or repeats it.
+    version_assignment = re.compile(r"^\s*__version__\s*=", re.MULTILINE)
+    literal = re.escape(version.__version__)
+    for path in [*sorted((REPO_ROOT / "keras_proba").rglob("*.py")), REPO_ROOT / "pyproject.toml"]:
+        if path.name == "version.py" and path.parent.name == "keras_proba":
+            continue
+        text = path.read_text()
+        assert not version_assignment.search(text), f"{path} assigns __version__"
+        assert not re.search(rf"[\"']{literal}[\"']", text), f"{path} repeats the version {version.__version__}"
+
+
+def test_build_backend_resolves_version():
+    """setuptools reads the version from version.py, as it would when building."""
+    pyprojecttoml = pytest.importorskip("setuptools.config.pyprojecttoml")
+    config = pyprojecttoml.read_configuration(REPO_ROOT / "pyproject.toml", expand=True)
+    assert config["project"]["version"] == keras_proba.__version__
+
+
+def test_installed_metadata_matches():
+    metadata = pytest.importorskip("importlib.metadata")
+    try:
+        installed = metadata.version("keras-proba")
+    except metadata.PackageNotFoundError:
+        pytest.skip("keras-proba is not installed; tests run from the source tree.")
+    assert installed == keras_proba.__version__
 
 
 def test_end_to_end_with_public_api_only(tmp_path):

@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "keras-proba"
-version = "0.1.0"
+# The version is only written in keras_proba/version.py; see [tool.setuptools.dynamic].
+dynamic = ["version"]
 description = "Uncertainty awareness in deep learning with multi-backend Keras 3"
 readme = "README.md"
 authors = [
@@ -30,6 +31,9 @@ dev = [
     "jax",
     "torch",
 ]
+
+[tool.setuptools.dynamic]
+version = { attr = "keras_proba.version.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -20,8 +20,7 @@ model.compile(metrics=[keras_proba.metrics.ExpectedCalibrationError(from_logits=
 """
 
 from keras_proba import callbacks, layers, losses, metrics, ops, postprocessing, stats
-
-__version__ = "0.1.0"
+from keras_proba.version import __version__
 
 __all__ = [
     "callbacks",
