@@ -121,7 +121,7 @@ class GaussianProcessClassificationHead(ClassificationHead):
     with `mean_field_logits`, and optionally the covariance matrix.
 
     Remember to reset the GP covariance at the start of each epoch, e.g. with
-    `keras_proba.callbacks.reset_covariance.ResetCovarianceCallback`.
+    `keras_proba.callbacks.ResetCovarianceCallback`.
 
     Example:
 
