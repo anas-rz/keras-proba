@@ -8,14 +8,19 @@ used by the hidden layers of the Spectral-normalized Neural Gaussian Process
 The wrappers bound the spectral norm of the wrapped layer's kernel W:
     sigma = v W u^T          (power iteration estimate of ||W||_2)
     W <- W * c / sigma       if c / sigma < 1, else W
-where c is `norm_multiplier`. During training the normalized kernel is
-assigned back to the layer and the gradient is taken with respect to it, i.e.
-the kernel is projected after every update (see Alg. 1 of [1]).
+where c is `norm_multiplier`. Two modes are supported:
 
-Backend note: on JAX, assignments to trainable variables inside `fit` are
-discarded, so the projected kernel is not persisted there. The forward pass
-and its gradient still match the other backends, since the projection is
-recomputed from the persisted `u`/`v` vectors on every call.
+- `"projection"` (default, as in the reference): during training the
+  normalized kernel is assigned back to the layer and the gradient is taken
+  with respect to it, i.e. the kernel is projected after every update (see
+  Alg. 1 of [1]). On JAX, assignments to trainable variables inside `fit` are
+  discarded, so the projected kernel is not persisted there. Each forward pass
+  and its gradient still match the other backends, but training drifts from
+  them over steps.
+- `"reparameterization"`: the kernel variable is never modified. The layer is
+  called with the normalized kernel W * c / sigma(W), and the gradient flows
+  through sigma, with `u` and `v` held constant [2]. This behaves identically
+  on all backends, including JAX.
 
 ## References:
 
@@ -59,6 +64,32 @@ def _assign_straight_through(variable, value):
     variable.assign(current + ops.stop_gradient(value - current))
 
 
+_SUPPORTED_MODES = ("projection", "reparameterization")
+
+
+def _validate_mode(mode):
+    if mode not in _SUPPORTED_MODES:
+        raise ValueError(f"`mode` must be one of {_SUPPORTED_MODES}. Received: {mode}")
+
+
+def _call_with_kernel(layer, kernel, inputs):
+    """Calls `layer` with `kernel` substituted for `layer.kernel`, without assigning it."""
+
+    def value(variable):
+        return kernel if variable is layer.kernel else variable.value
+
+    outputs, non_trainable_values = layer.stateless_call(
+        [value(v) for v in layer.trainable_variables],
+        [value(v) for v in layer.non_trainable_variables],
+        inputs,
+    )
+    # Write back any other state the wrapped layer updated.
+    for variable, new_value in zip(layer.non_trainable_variables, non_trainable_values):
+        if variable is not layer.kernel:
+            variable.assign(new_value)
+    return outputs
+
+
 @keras.saving.register_keras_serializable(package="keras_proba")
 class SpectralNormalization(keras.layers.Wrapper):
     """Implements spectral normalization for a Dense layer.
@@ -80,6 +111,8 @@ class SpectralNormalization(keras.layers.Wrapper):
         aggregation: How the `u` and `v` vectors are aggregated across replicas
             in distributed training, e.g. `"mean"`.
         inhere_layer_name: Whether to use the name of the wrapped layer.
+        mode: `"projection"` (as in the reference) or `"reparameterization"`
+            (identical on all backends). See the module docstring.
         **kwargs: Other keyword arguments for `keras.layers.Wrapper`.
     """
 
@@ -91,13 +124,16 @@ class SpectralNormalization(keras.layers.Wrapper):
         training=True,
         aggregation="mean",
         inhere_layer_name=False,
+        mode="projection",
         **kwargs,
     ):
+        _validate_mode(mode)
         self.iteration = iteration
         self.do_power_iteration = training
         self.aggregation = aggregation
         self.norm_multiplier = norm_multiplier
         self.inhere_layer_name = inhere_layer_name
+        self.mode = mode
 
         # Set layer name.
         wrapper_name = kwargs.pop("name", None)
@@ -137,18 +173,25 @@ class SpectralNormalization(keras.layers.Wrapper):
 
     def call(self, inputs, training=None):
         training = self.do_power_iteration if training is None else training
-        self.update_weights(training=training)
+        w_norm = self.update_weights(training=training)
+        if self.mode == "reparameterization":
+            return _call_with_kernel(self.layer, w_norm, inputs)
         return self.layer(inputs)
 
     def update_weights(self, training=True):
         """Runs power iteration and bounds the kernel's spectral norm.
 
         With `training=True`, `u` and `v` are updated by power iteration first.
-        Otherwise the current `u` and `v` are used as is. In both cases the
-        normalized kernel is assigned to the wrapped layer. Unlike the
-        reference, which uses the raw kernel at inference, this keeps inference
-        normalized on JAX; elsewhere it is a no-op unless the kernel changed
-        since the last training call.
+        Otherwise the current `u` and `v` are used as is.
+
+        In `"projection"` mode, the normalized kernel is assigned to the wrapped
+        layer. Unlike the reference, which uses the raw kernel at inference,
+        this keeps inference normalized on JAX; elsewhere it is a no-op unless
+        the kernel changed since the last training call. In
+        `"reparameterization"` mode, the kernel is left unchanged.
+
+        Returns:
+            The normalized kernel.
         """
         w = self.w.value
         w_reshaped = ops.reshape(w, (-1, self.w_shape[-1]))
@@ -171,9 +214,12 @@ class SpectralNormalization(keras.layers.Wrapper):
         sigma = ops.reshape(sigma, ())
 
         # Bound spectral norm to be not larger than self.norm_multiplier.
-        _assign_straight_through(
-            self.layer.kernel, _bound_spectral_norm(w, ops.stop_gradient(sigma), self.norm_multiplier)
-        )
+        if self.mode == "reparameterization":
+            # Differentiate through sigma, as in [2].
+            return _bound_spectral_norm(w, sigma, self.norm_multiplier)
+        w_norm = _bound_spectral_norm(w, ops.stop_gradient(sigma), self.norm_multiplier)
+        _assign_straight_through(self.layer.kernel, w_norm)
+        return w_norm
 
     def compute_output_shape(self, input_shape):
         return self.layer.compute_output_shape(input_shape)
@@ -185,6 +231,7 @@ class SpectralNormalization(keras.layers.Wrapper):
             "training": self.do_power_iteration,
             "aggregation": self.aggregation,
             "inhere_layer_name": self.inhere_layer_name,
+            "mode": self.mode,
         }
         base_config = super().get_config()
         return {**base_config, **config}
@@ -208,6 +255,8 @@ class SpectralNormalizationConv2D(keras.layers.Wrapper):
             in distributed training, e.g. `"mean"`.
         legacy_mode: Whether to set the leading dimension of `u` and `v` to the
             batch size. Only for backward compatibility.
+        mode: `"projection"` (as in the reference) or `"reparameterization"`
+            (identical on all backends). See the module docstring.
         **kwargs: Other keyword arguments for `keras.layers.Wrapper`.
     """
 
@@ -219,13 +268,16 @@ class SpectralNormalizationConv2D(keras.layers.Wrapper):
         training=True,
         aggregation="mean",
         legacy_mode=False,
+        mode="projection",
         **kwargs,
     ):
+        _validate_mode(mode)
         self.iteration = iteration
         self.do_power_iteration = training
         self.aggregation = aggregation
         self.norm_multiplier = norm_multiplier
         self.legacy_mode = legacy_mode
+        self.mode = mode
 
         if not isinstance(layer, keras.layers.Conv2D):
             raise ValueError(f"layer must be a `keras.layers.Conv2D` instance. You passed: {layer}")
@@ -287,14 +339,21 @@ class SpectralNormalizationConv2D(keras.layers.Wrapper):
         )
 
     def call(self, inputs):
-        self.update_weights()
+        w_norm = self.update_weights()
+        if self.mode == "reparameterization":
+            return _call_with_kernel(self.layer, w_norm, inputs)
         return self.layer(inputs)
 
     def _conv(self, x, w):
         return ops.conv(x, w, strides=self.strides, padding="same", data_format="channels_last")
 
     def update_weights(self):
-        """Computes power iteration for convolutional filters based on [3]."""
+        """Computes power iteration for convolutional filters based on [3].
+
+        Returns:
+            The normalized kernel. It is also assigned to the wrapped layer in
+            `"projection"` mode.
+        """
         w = self.w.value
 
         # Initialize u, v vectors.
@@ -325,9 +384,12 @@ class SpectralNormalizationConv2D(keras.layers.Wrapper):
         self.u.assign(u_hat)
         self.v.assign(v_hat)
 
-        _assign_straight_through(
-            self.layer.kernel, _bound_spectral_norm(w, ops.stop_gradient(sigma), self.norm_multiplier)
-        )
+        if self.mode == "reparameterization":
+            # Differentiate through sigma, as in [2].
+            return _bound_spectral_norm(w, sigma, self.norm_multiplier)
+        w_norm = _bound_spectral_norm(w, ops.stop_gradient(sigma), self.norm_multiplier)
+        _assign_straight_through(self.layer.kernel, w_norm)
+        return w_norm
 
     def compute_output_shape(self, input_shape):
         return self.layer.compute_output_shape(input_shape)
@@ -339,6 +401,7 @@ class SpectralNormalizationConv2D(keras.layers.Wrapper):
             "training": self.do_power_iteration,
             "aggregation": self.aggregation,
             "legacy_mode": self.legacy_mode,
+            "mode": self.mode,
         }
         base_config = super().get_config()
         return {**base_config, **config}

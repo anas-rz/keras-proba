@@ -102,6 +102,41 @@ def test_dense_forward_parity(iteration, norm_multiplier):
     )
 
 
+@pytest.mark.parametrize("iteration", [1, 3])
+def test_dense_reparameterization_forward_parity(iteration):
+    """Without optimizer steps, reparameterization gives the reference's outputs and u/v."""
+    rng = np.random.default_rng(0)
+    tf_wrapper, _ = build_dense_pair(iteration=iteration)
+    k_wrapper = SpectralNormalization(keras.layers.Dense(5), iteration=iteration, mode="reparameterization")
+    k_wrapper.build((None, 6))
+    kernel = rng.normal(size=(6, 5)).astype("float32") * 3
+    tf_wrapper.layer.kernel.assign(kernel)
+    copy_weights(tf_wrapper, k_wrapper)
+
+    for _ in range(3):
+        x = rng.normal(size=(8, 6)).astype("float32")
+        np.testing.assert_allclose(
+            ops.convert_to_numpy(k_wrapper(x, training=True)), tf_wrapper(x, training=True).numpy(), atol=1e-5
+        )
+        np.testing.assert_allclose(ops.convert_to_numpy(k_wrapper.u), tf_wrapper.u.numpy(), atol=1e-5)
+        np.testing.assert_allclose(ops.convert_to_numpy(k_wrapper.v), tf_wrapper.v.numpy(), atol=1e-5)
+    # The reference projected its kernel; ours stays as it was.
+    np.testing.assert_array_equal(ops.convert_to_numpy(k_wrapper.layer.kernel), kernel)
+
+
+def test_conv_reparameterization_forward_parity():
+    rng = np.random.default_rng(0)
+    conv_kwargs = {"filters": 4, "kernel_size": 3, "padding": "same"}
+    tf_wrapper, _ = build_conv_pair((None, 8, 8, 3), conv_kwargs)
+    k_wrapper = SpectralNormalizationConv2D(keras.layers.Conv2D(**conv_kwargs), mode="reparameterization")
+    k_wrapper.build((None, 8, 8, 3))
+    copy_weights(tf_wrapper, k_wrapper)
+
+    for _ in range(3):
+        x = rng.normal(size=(2, 8, 8, 3)).astype("float32")
+        np.testing.assert_allclose(ops.convert_to_numpy(k_wrapper(x)), tf_wrapper(x).numpy(), atol=1e-4)
+
+
 @pytest.mark.parametrize("training", [True, False])
 def test_dense_default_training_parity(training):
     rng = np.random.default_rng(1)

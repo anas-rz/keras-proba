@@ -43,17 +43,19 @@ def compute_spectral_norm(weight):
         ),
     ],
 )
-def test_spec_norm_magnitude(input_shape, make_layer, norm_wrapper):
+@pytest.mark.parametrize("mode", ["projection", "reparameterization"])
+def test_spec_norm_magnitude(input_shape, make_layer, norm_wrapper, mode):
     """Tests if the weights' spectral norm converges to norm_multiplier."""
     keras.utils.set_random_seed(0)
     layer = make_layer()
     layer.build(input_shape)
-    sn_layer = norm_wrapper(layer, iteration=NUM_ITERATIONS, norm_multiplier=NORM_MULTIPLIER)
+    sn_layer = norm_wrapper(layer, iteration=NUM_ITERATIONS, norm_multiplier=NORM_MULTIPLIER, mode=mode)
 
     # Perform normalization.
     sn_layer.build(input_shape)
-    sn_layer.update_weights()
-    normalized_kernel = ops.convert_to_numpy(sn_layer.layer.kernel)
+    normalized_kernel = ops.convert_to_numpy(sn_layer.update_weights())
+    if mode == "projection":
+        np.testing.assert_allclose(ops.convert_to_numpy(sn_layer.layer.kernel), normalized_kernel)
 
     spectral_norm_computed = compute_spectral_norm(normalized_kernel)
     np.testing.assert_allclose(spectral_norm_computed, NORM_MULTIPLIER, atol=1e-1)
@@ -80,6 +82,58 @@ def test_dense_kernel_is_bounded_after_calls():
         sn(x, training=True)
     sigma = compute_spectral_norm(ops.convert_to_numpy(sn.layer.kernel))
     np.testing.assert_allclose(sigma, 0.5, rtol=1e-3)
+
+
+@pytest.mark.parametrize("wrapper_cls", [SpectralNormalization, SpectralNormalizationConv2D])
+def test_reparameterization_leaves_kernel_unchanged(wrapper_cls):
+    keras.utils.set_random_seed(0)
+    init = keras.initializers.RandomNormal(stddev=5.0)
+    if wrapper_cls is SpectralNormalization:
+        layer, x = keras.layers.Dense(8, kernel_initializer=init), np.random.randn(4, 6).astype("float32")
+    else:
+        layer = keras.layers.Conv2D(4, 3, padding="same", kernel_initializer=init)
+        x = np.random.randn(2, 8, 8, 3).astype("float32")
+    sn = wrapper_cls(layer, iteration=3, norm_multiplier=0.5, mode="reparameterization")
+    sn.build(x.shape)
+    kernel = ops.convert_to_numpy(sn.layer.kernel).copy()
+    for _ in range(3):
+        out = ops.convert_to_numpy(sn(x, training=True))
+    np.testing.assert_array_equal(ops.convert_to_numpy(sn.layer.kernel), kernel)
+
+    # The output uses the normalized kernel, i.e. the raw kernel scaled by c / sigma < 1.
+    # Recompute it from the stored u and v, without another power iteration.
+    if wrapper_cls is SpectralNormalization:
+        w_norm = sn.update_weights(training=False)
+    else:
+        sn.do_power_iteration = False
+        w_norm = sn.update_weights()
+    w_norm = ops.convert_to_numpy(w_norm)
+    ratio = (w_norm / kernel).ravel()
+    np.testing.assert_allclose(ratio, ratio[0], rtol=1e-5)
+    assert ratio[0] < 1
+    expected = layer.stateless_call([w_norm, layer.bias.value], [], x)[0]
+    np.testing.assert_allclose(out, ops.convert_to_numpy(expected), atol=1e-5)
+
+
+def test_reparameterization_inference_is_bounded():
+    keras.utils.set_random_seed(0)
+    layer = keras.layers.Dense(8, kernel_initializer=keras.initializers.RandomNormal(stddev=5.0))
+    sn = SpectralNormalization(layer, iteration=50, norm_multiplier=0.5, mode="reparameterization")
+    sn.build((None, 12))
+    rng = np.random.default_rng(0)
+    x1 = rng.normal(size=(64, 12)).astype("float32")
+    x2 = x1 + rng.normal(size=(64, 12)).astype("float32")
+    out1 = ops.convert_to_numpy(sn(x1, training=False))
+    out2 = ops.convert_to_numpy(sn(x2, training=False))
+    ratios = np.linalg.norm(out2 - out1, axis=-1) / np.linalg.norm(x2 - x1, axis=-1)
+    assert ratios.max() <= 0.5 * 1.001
+
+
+def test_invalid_mode():
+    with pytest.raises(ValueError):
+        SpectralNormalization(keras.layers.Dense(2), mode="power")
+    with pytest.raises(ValueError):
+        SpectralNormalizationConv2D(keras.layers.Conv2D(2, 3), mode="power")
 
 
 def test_small_kernel_is_unchanged():

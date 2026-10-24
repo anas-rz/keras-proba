@@ -26,7 +26,9 @@ from keras_proba.layers.spectral_normalization import (
             aggregation="sum",
             inhere_layer_name=True,
         ),
+        lambda: SpectralNormalization(keras.layers.Dense(4), mode="reparameterization"),
         lambda: SpectralNormalizationConv2D(keras.layers.Conv2D(4, 3, name="conv")),
+        lambda: SpectralNormalizationConv2D(keras.layers.Conv2D(4, 3), mode="reparameterization"),
         lambda: SpectralNormalizationConv2D(
             keras.layers.Conv2D(4, 3), iteration=2, norm_multiplier=0.8, training=False, legacy_mode=True
         ),
@@ -46,12 +48,14 @@ def test_conv_name_suffix_is_not_repeated():
     assert restored.layer.name == "conv_spec_norm"
 
 
-def test_model_save_and_load(tmp_path):
+@pytest.mark.parametrize("mode", ["projection", "reparameterization"])
+def test_model_save_and_load(tmp_path, mode):
     keras.utils.set_random_seed(0)
     inputs = keras.Input(shape=(8, 8, 3))
-    h = SpectralNormalizationConv2D(keras.layers.Conv2D(4, 3, padding="same", activation="relu"))(inputs)
+    conv = keras.layers.Conv2D(4, 3, padding="same", activation="relu")
+    h = SpectralNormalizationConv2D(conv, mode=mode)(inputs)
     h = keras.layers.Flatten()(h)
-    outputs = SpectralNormalization(keras.layers.Dense(2), iteration=2)(h)
+    outputs = SpectralNormalization(keras.layers.Dense(2), iteration=2, mode=mode)(h)
     model = keras.Model(inputs, outputs)
     model.compile(optimizer="adam", loss="mse")
 
