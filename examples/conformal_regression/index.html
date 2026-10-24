@@ -1,0 +1,1364 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Uncertainty awareness in deep learning with multi-backend Keras 3">
+      
+      
+        <meta name="author" content="Muhammad Anas Raza">
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Adaptive conformal intervals for house prices - Keras Probability</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adaptive-conformal-intervals-for-house-prices" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Keras Probability" class="md-header__button md-logo" aria-label="Keras Probability" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Keras Probability
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Adaptive conformal intervals for house prices
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/anas-rz/keras-proba" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    anas-rz/keras-proba
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting_started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting Started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/sngp/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/layers/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../testing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Testing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Keras Probability" class="md-nav__button md-logo" aria-label="Keras Probability" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Keras Probability
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/anas-rz/keras-proba" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    anas-rz/keras-proba
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/sngp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Distance-aware models (SNGP)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/bayesian/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bayesian layers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Probabilistic regression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/calibration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Calibration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/conformal/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conformal prediction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../forecasting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Forecasting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../regression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Regression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../classification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Classification
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/layers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    keras_proba.layers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/losses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    keras_proba.losses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    keras_proba.metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/callbacks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    keras_proba.callbacks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/postprocessing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    keras_proba.postprocessing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/ops/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    keras_proba.ops
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/stats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    keras_proba.stats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#load-the-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load the data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-model-that-predicts-its-own-uncertainty" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A model that predicts its own uncertainty
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#constant-and-adaptive-conformal-intervals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Constant and adaptive conformal intervals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-do-the-intervals-hold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where do the intervals hold?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-we-learned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What we learned
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="adaptive-conformal-intervals-for-house-prices">Adaptive conformal intervals for house prices<a class="headerlink" href="#adaptive-conformal-intervals-for-house-prices" title="Permanent link">&para;</a></h1>
+<p><strong>Backend:</strong> TensorFlow, JAX or PyTorch<br>
+<strong>Dataset:</strong> California housing<br>
+<strong>Techniques:</strong> <code>GaussianHead</code>, <code>SplitConformalRegressor</code></p>
+<p><a class="md-button md-button--primary" href="https://colab.research.google.com/github/anas-rz/keras-proba/blob/main/examples/regression/postprocessing/conformal_regression.ipynb"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.941 4.976a7.03 7.03 0 0 0-4.93 2.064 7.033 7.033 0 0 0-.124 9.807l2.395-2.395a3.646 3.646 0 0 1 5.15-5.148l2.397-2.399a7.03 7.03 0 0 0-4.888-1.93m-9.871.01a7.03 7.03 0 0 0-4.888 1.931l2.391 2.391a3.643 3.643 0 0 1 5.023.127l1.734-2.973-.1-.08a7.03 7.03 0 0 0-4.16-1.396m15.01 2.172-2.39 2.39a3.646 3.646 0 0 1-5.15 5.15l-2.406 2.407a7.036 7.036 0 0 0 9.945-9.947m-20.148.01a7.033 7.033 0 0 0-.002 9.681l2.397-2.397a3.643 3.643 0 0 1-.004-4.892zm7.664 7.423a3.635 3.635 0 0 1-5.017.113L2.182 17.1a7.03 7.03 0 0 0 9.007.546l.137-.112z"/></svg></span> <strong>View in Colab</strong></a> &nbsp; <a class="md-button" href="https://github.com/anas-rz/keras-proba/blob/main/examples/regression/postprocessing/conformal_regression.ipynb"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M8 0c4.42 0 8 3.58 8 8a8.01 8.01 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27s-1.36.09-2 .27c-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8"/></svg></span> <strong>GitHub source</strong></a></p>
+<hr />
+<p>Make conformal intervals as wide as each prediction is uncertain, and keep their 90% guarantee.</p>
+<p>Split conformal prediction gives intervals that contain the true value at least 90% of the time
+(see <a href="https://anas-rz.github.io/keras-proba/examples/conformal_forecast_intervals/">conformal forecast intervals</a>
+for the recipe). Applied to a point prediction, every interval gets <strong>the same width</strong>. But some
+prices are much easier to predict than others: a fixed width is too wide for the easy ones and
+too narrow for the hard ones.</p>
+<p>If the model also predicts its uncertainty, conformal prediction can measure the errors <strong>in
+units of that uncertainty</strong>. The intervals then stretch and shrink with each input, and keep
+their 90% guarantee.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Install keras-proba, then choose a backend: "jax", "tensorflow" or "torch".</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="err">!</span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">q</span> <span class="n">keras</span><span class="o">-</span><span class="n">proba</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"KERAS_BACKEND"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"jax"</span>
+</code></pre></div>
+<h2 id="load-the-data">Load the data<a class="headerlink" href="#load-the-data" title="Permanent link">&para;</a></h2>
+<p>California housing: eight features per district and the median house value ($100,000 units).
+A quarter of the training data is held out for calibration.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">keras_proba</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">keras</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">set_random_seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">)</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">california_housing</span><span class="o">.</span><span class="n">load_data</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s2">"large"</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">y</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">/</span> <span class="mf">1e5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="p">(</span><span class="n">y_test</span> <span class="o">/</span> <span class="mf">1e5</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">mean</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">x</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">x</span><span class="p">,</span> <span class="n">x_test</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span><span class="p">,</span> <span class="p">(</span><span class="n">x_test</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">x_cal</span><span class="p">,</span> <span class="n">y_cal</span><span class="p">,</span> <span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span><span class="p">],</span> <span class="n">y</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span> <span class="p">:],</span> <span class="n">y</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">//</span> <span class="mi">4</span> <span class="p">:]</span>
+</code></pre></div>
+<h2 id="a-model-that-predicts-its-own-uncertainty">A model that predicts its own uncertainty<a class="headerlink" href="#a-model-that-predicts-its-own-uncertainty" title="Permanent link">&para;</a></h2>
+<p>A <a href="https://anas-rz.github.io/keras-proba/api/layers/#keras_proba.layers.GaussianHead"><code>GaussianHead</code></a>
+predicts a mean and a standard deviation for each district.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">model</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="p">[</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="n">keras</span><span class="o">.</span><span class="n">Input</span><span class="p">((</span><span class="mi">8</span><span class="p">,)),</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"relu"</span><span class="p">),</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s2">"relu"</span><span class="p">),</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="n">keras_proba</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">GaussianHead</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="p">]</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="s2">"adam"</span><span class="p">,</span> <span class="n">loss</span><span class="o">=</span><span class="n">keras_proba</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">GaussianNLL</span><span class="p">())</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">x_train</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">y_train</span><span class="p">,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">validation_split</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">patience</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">restore_best_weights</span><span class="o">=</span><span class="kc">True</span><span class="p">)],</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="p">)</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="n">mean_cal</span><span class="p">,</span> <span class="n">std_cal</span> <span class="o">=</span> <span class="n">keras_proba</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">split_gaussian_params</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_cal</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="n">mean_test</span><span class="p">,</span> <span class="n">std_test</span> <span class="o">=</span> <span class="n">keras_proba</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">split_gaussian_params</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+</code></pre></div>
+<h2 id="constant-and-adaptive-conformal-intervals">Constant and adaptive conformal intervals<a class="headerlink" href="#constant-and-adaptive-conformal-intervals" title="Permanent link">&para;</a></h2>
+<p>Both are calibrated on the same held-out districts. The only difference is <code>scale=</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">constant</span> <span class="o">=</span> <span class="n">keras_proba</span><span class="o">.</span><span class="n">postprocessing</span><span class="o">.</span><span class="n">SplitConformalRegressor</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_cal</span><span class="p">,</span> <span class="n">mean_cal</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">adaptive</span> <span class="o">=</span> <span class="n">keras_proba</span><span class="o">.</span><span class="n">postprocessing</span><span class="o">.</span><span class="n">SplitConformalRegressor</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_cal</span><span class="p">,</span> <span class="n">mean_cal</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">std_cal</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">intervals</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="s2">"constant width"</span><span class="p">:</span> <span class="n">constant</span><span class="o">.</span><span class="n">predict_interval</span><span class="p">(</span><span class="n">mean_test</span><span class="p">),</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s2">"adaptive width"</span><span class="p">:</span> <span class="n">adaptive</span><span class="o">.</span><span class="n">predict_interval</span><span class="p">(</span><span class="n">mean_test</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">std_test</span><span class="p">),</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">}</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">)</span> <span class="ow">in</span> <span class="n">intervals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">coverage</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">convert_to_numpy</span><span class="p">(</span><span class="n">keras_proba</span><span class="o">.</span><span class="n">postprocessing</span><span class="o">.</span><span class="n">interval_coverage</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">width</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">convert_to_numpy</span><span class="p">(</span><span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">upper</span> <span class="o">-</span> <span class="n">lower</span><span class="p">)))</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: contains the actual value </span><span class="si">{</span><span class="n">coverage</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2"> of the time, mean width $</span><span class="si">{</span><span class="n">width</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">k"</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>constant width: contains the actual value 91.0% of the time, mean width $166k
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>adaptive width: contains the actual value 90.0% of the time, mean width $147k
+</code></pre></div>
+<h2 id="where-do-the-intervals-hold">Where do the intervals hold?<a class="headerlink" href="#where-do-the-intervals-hold" title="Permanent link">&para;</a></h2>
+<p>Both are valid on average, but prices are harder to predict in some groups of districts than in
+others. Split the districts by median income: the constant intervals cover some groups well
+above 90% and others below it. The adaptive intervals change their width from group to group,
+and keep every group close to 90%.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">income</span> <span class="o">=</span> <span class="n">x_test</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">groups</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">income</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">]))</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"lowest"</span><span class="p">,</span> <span class="s2">"second"</span><span class="p">,</span> <span class="s2">"third"</span><span class="p">,</span> <span class="s2">"highest"</span><span class="p">]</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_coverage</span><span class="p">,</span> <span class="n">ax_width</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">))</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">intervals</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">convert_to_numpy</span><span class="p">(</span><span class="n">lower</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">keras</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">convert_to_numpy</span><span class="p">(</span><span class="n">upper</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">inside</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_test</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">lower</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">y_test</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">upper</span><span class="p">)</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.4</span> <span class="o">*</span> <span class="n">i</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">ax_coverage</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="p">[</span><span class="n">inside</span><span class="p">[</span><span class="n">groups</span> <span class="o">==</span> <span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)],</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="n">ax_width</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="p">[</span><span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">upper</span> <span class="o">-</span> <span class="n">lower</span><span class="p">)[</span><span class="n">groups</span> <span class="o">==</span> <span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)],</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">ax_coverage</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"k"</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">ax_coverage</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="mf">0.75</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"coverage"</span><span class="p">,</span> <span class="n">xticks</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">xticklabels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"income quartile"</span><span class="p">)</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="n">ax_width</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">ylabel</span><span class="o">=</span><span class="s2">"mean width ($k)"</span><span class="p">,</span> <span class="n">xticks</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.2</span><span class="p">,</span> <span class="n">xticklabels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"income quartile"</span><span class="p">)</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">ax_coverage</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div>
+<p><img alt="Output plot" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA94AAAEiCAYAAAAPogpgAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjExLjIsIGh0dHBzOi8vbWF0cGxvdGxpYi5vcmcvgI3uAAAAAAlwSFlzAAAPYQAAD2EBqD+naQAAdd9JREFUeJzt3XdYFNf7NvCbuvSOSBVBLNg7igoaxW7sGNHYYot+o7ElplmSqEnUxGgsib3HFo1dVFCxF+wVLKAUQanS2fP+wcv8Mi4YIKyLcH+uay+dc86ceWZm2dlnZ+aMlhBCgIiIiIiIiIjUQlvTARARERERERGVZ0y8iYiIiIiIiNSIiTcRERERERGRGjHxJiIiIiIiIlIjJt5EREREREREasTEm4iIiIiIiEiNmHgTERERERERqRETbyIiIiIiIiI1YuJNREREREREpEa6mg4gOjoau3btgrm5OQYNGlSkee7cuYPg4GAYGBigc+fOqFy5conaEBEREREREambxs545+bmol+/fmjWrBmWLFmCX375pUjz/fbbb2jcuDFOnDiBrVu3onr16jh58mSx2xARERERERG9DVpCCKGJBefk5OCvv/5Cz549MXXqVISEhODSpUtvnOfp06dwd3fHsmXLMHz4cADAiBEjcPLkSdy/fx9aWlpFakNERERERET0tmjsjLeuri769esHPT29Is+zZ88e6OvrIyAgQCobM2YMwsLCEBoaWuQ2RERERERERG+Lxu/xLo47d+6gSpUqUCgUUlnNmjWlukaNGhWpzesyMzORmZkpTSuVSrx8+RLW1tY8Q05ERBohhEBKSgocHBygrc2xUF+nVCoRFRUFU1NTHquJiEgjinOsfqcS75SUFFhYWMjKTE1NoaOjg5SUlCK3ed3cuXMxa9YsdYRMRET0n0RGRsLJyUnTYZQ5UVFRcHZ21nQYRERERTpWv1OJt5GREZKTk2VlqampyM3NhbGxcZHbvG769OmYNGmSNJ2UlAQXFxdERkbCzMyslNeCiIjo3yUnJ8PZ2RmmpqaaDqVMyt8uPFYTEZGmFOdY/U4l3jVq1MCWLVuQk5MDXd280MPDwwEAHh4eRW7zOoVCIbs0PZ+ZmRkP5kREpFG8jLpg+duFx2oiItK0ohyry/RNY5mZmZg/fz5u3boFAOjevTtSU1OxZ88eqc3atWvh6OiIpk2bFrkNERERERER0dui0TPea9euRXx8PK5cuYLY2FjMnz8fADBhwgTo6ekhPT0dU6dOhY2NDWrXrg13d3d8+eWXGDZsGEJCQvDy5Uts3boVO3bsgI6ODgAUqQ0RERERERHR26LRxPvFixeIiYlBs2bN0KxZM8TExADIGx0OAAwMDDB58mTUqVNHmmfWrFlo164djh8/DltbW1y7dk0atbw4bYiIiIiIiIjeBi2Rn+WSJDk5Gebm5khKSuJ9Y0SE3NxcZGdnazoMKof09fULffwIj0Vvxu1DRESaVpxj0Ts1uBoR0dskhEBMTAwSExM1HQqVU9ra2qhatSr09fU1HQoRERGpERNvIqJC5CfdlSpVgpGREUeXplKlVCoRFRWF6OhouLi48P1FRERUjjHxJiIqQG5urpR0W1tbazocKqdsbW0RFRWFnJwc6OnpaTocIiIiUpMy/TgxIiJNyb+n28jISMORUHmWf4l5bm6uhiMhIiIideIZbyKiN+Dlv6ROfH8REZWSmeaajuDNZiZpOgLSMJ7xJiKiCu3KlSuIj49/Y5urV68iLi7ujW0uXryIhISE0gyNiIiIygkm3kREVOouX76MFy9evBN9d+nSBYcOHXpjm759+2LPnj1vjKFt27Y4ceJEqcVFRERE5QcvNSciKibXz/e/1eU9ntf1rS6vNHTs2BFLlizBgAEDynzfjRs3hq2trUZjICIiovKNiTcRUTkVGRmJpKQk1KxZE7q68o97pVKJe/fuIScnB7Vq1VKpv3jxIqpVqwZTU1OEhYXB3Nwc9vb2KsuIi4tDdHQ03N3dYWxsDAC4du0acnJyEBYWhnPnzkFXVxdNmjTBjRs38OrVK2hpacHBwQFOTk4q9zj/23IL6/ufHj16hNzcXFSrVg0AkJycjNu3b6NWrVowN8+7BzA8PBxaWlpwc3PDt99+CxcXF1kfmZmZuHv3LhwdHWFjYyOr+7cY8usK22ZEJcL7V4mI3mlMvImIypmwsDAEBATg9u3bcHZ2RkpKCtauXYv33nsPQF5y6+/vj7S0NCgUCmRkZGDt2rXo3Lmz1Efbtm3Rp08fHDt2DJaWlggLC8MHH3yA1atXA8gbhXvIkCHYs2cP3N3dERkZiZEjR2LevHmYO3cuXr16hXXr1mHfvn0wNTVFYGAgfvrpJ9y/fx9KpRKPHz9G5cqVsX37dtSoUaPIyy2s73/atWsXNm3ahCtXrgAANmzYgPHjx2PRokX45JNPAAADBgxA//79MXXqVHTp0gXz58/HoEGDAAAhISHo06cPdHV1oaWlhcaNGyM9PV3q/00x/PXXXxg/fnyBsVPZ9ravZCmuxwaajuDtKvP74x28Eum/KOv7A+DfSFlT0f5GioL3eBMRlSPZ2dno0qULHBwcEBsbi9u3b+PSpUvSwGDZ2dkYOHAg2rVrh+joaDx58gRjxoxBQEAAXr58KevrypUrCA0NxY0bN3Dx4kVs2LABwcHBAICDBw/iwIEDePTokTTwmJ2dHQBg69atMDc3x7fffotz585JSen69etx7tw5XLhwAVFRUWjRogU+/vhjlXV403IL6/uffH19ce3aNWmgs+DgYNSoUUPqIzk5GaGhofD19S1w+w0ePBgDBgzAs2fP8PTpUzg7OyMqKkpq86YY3hQ7ERERVVxMvImIypGjR4/iwYMHWLp0qfQMcjs7O+le5ODgYISHh2PevHnSZd5ffvklgLwzxf80fvx46d7nOnXqwMPDAzdu3AAAZGVlQVtbW3r+tLa2Nj799NN/jS89PR13797F5cuX0bx5c5w6dUrlGdZvWm5RNGzYEGZmZjh58iQA4OTJk/j6669x4sQJCCFw6tQpGBsbo1GjRirzBgUFITIyErNnz5bKvvvuO2hrF+1w+V9jJyIiovKJiTcRUTny4MED2NraFnpvcXh4OGxtbWX3Levr66NatWoIDw+Xtc0/g53PyMgIr169AgB0794dPj4+cHNzQ+fOnTF//nzExsa+MbY5c+bA1tYWXbp0kS79zs7OVhkd/E3LLQptbW20atUKQUFBuHXrFrKzszFgwADo6uri2rVrCA4ORqtWraCjo6Myb3h4OOzs7KR7wQHAwsJCJabC/NfYiYiIqHxi4k1EVI4YGRkhNTUVQogC601NTQtMBFNTU2Fqalrk5ejp6WHnzp0ICwvD4MGDcfz4cdSqVQtPnz4tsH1oaCi+/vprBAcH4+HDh7h48SKWLl0KIG+gt9Lm6+uL4OBgBAcHw8fHBzo6OmjTpo1UVtBl5kDh24fJMxEREf0XTLyJiMqR1q1bIyMjA4cPH5aVZ2RkAMh7dFZaWhpOnz4t1T169Aj3799XGR38TfITUXt7ewwcOBD79u1DZmam1K+hoSGys7Ol9uHh4bCwsJAt49+enV2Y1/suiK+vL65fv45du3ZJSbavry/27NlT6P3dQN72SU5OxqVLl6Sy8+fPIzk5udgxEBEREeXjqOZEROVIjRo1MH78eAQEBGDWrFmoUaMGTp06hfT0dPz000+oWbMmhg0bhoEDB2LevHkwNDTEN998Ax8fH/j5+RV5ORs2bMCBAwfQv39/ODk54ciRI9DS0kKzZs0A5N3fvG3bNri6usLQ0BDNmzdHeno6pkyZgi5duuD06dP45ZdfSrSOr/dd0A8GDRs2hLm5OY4fP46ff/4ZQF7iPX78eJiZmRV4fzcA1KpVC/7+/hgwYADmzZsHIQS++OIL6OnpFTsGIiIionxMvImIyplff/0VTZs2xY4dO/D333/D19dXGkANAFasWIElS5Zg7dq1yMnJQd++fTF58mRZH82aNYOVlZWsrG7dunB0dAQAjBkzBs7OztiyZQuioqJQrVo1nD59GlWrVgUALFmyBN9//z2+/PJLKBQKBAYGIjAwEL/88gtmzZqFmjVrYteuXfj666+hr69f5OUW1vfrtLW1MWTIEFy/fh1169YFANSuXRvt27dHzZo1Zfd3N27cWBoQDQBWr16NefPm4bfffoODgwOWL1+O5cuXo1KlSm+MoSixExERUcWkJQq7EbACS05Ohrm5OZKSkmBmZqbpcIhIAzIyMvDo0SNUrVoVBgYV7OGg9Na86X3GY9Gblfb2KfPPxDUYqOkQ3mxmUql2V+b3RwV7RnFZ3x8A/0bKmoryN1KcYxHv8SYiIiIiIiJSIybeRERERERERGrExJuIiIiIiIhIjZh4ExEREREREakRE28iIiIiIiIiNWLiTURERERERKRGfI43ERERFcuDBw8QFBSE+vXro3nz5rK6x48f49ChQyrzDB48GMbGxrKyCxcu4Pbt27C3t0e7du2gp6en1riJiIg0hYk3ERERFUl4eDjGjBmDx48fIz4+HqNHj1ZJvK9evYr//e9/GDFihKx8wIAB0v+FEBg2bBj27t2L9957D1euXIGZmRmOHTsGS0vLt7IuREREbxMTbyIiIiqS7OxsTJ06FR06dEDdunULbadQKLB8+fJC63fu3InNmzfj6tWr8PT0REpKCho1aoRvvvkGixcvVkfoREREGsV7vImICADQqFEjbNiw4a0sq0aNGti2bdtbWVZRFCWeomwfJycn7N+/vzRDK1Nq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cuQIgLyk+8iRI6hevTrs7OxK3C8RERERERGRumjsjHdkZCTs7e1lZfnTkZGRBc7j6uqKY8eOoU+fPpg8eTLS0tLg7OyMoKAg6OjolLjfzMxMZGZmStPJycklWykiIiIiIiKi12jsjHdOTg709fVlZXp6etDW1kZ2dnaB88TGxuLDDz9Eu3btsGnTJmzcuBF6enoYMWIElEplifudO3cuzM3NpZezs3MprCERERERERGRBs94W1tb48WLF7KyhIQEKJVK2NjYFDjPihUr8OrVK6xbtw66unmhu7m5wcPDA8eOHUOHDh1K1O/06dMxadIkaTo5OZnJNxEREREREZUKjZ3xbty4McLDwxEfHy+VnTlzRqorSEpKCiwsLKSkGwBsbW0B/N/l4SXpV6FQwMzMTPYiIiIiIiIiKg0aS7x79OgBW1tbzJgxA0qlEq9evcL3338PPz8/uLq6AshLtOvUqYM9e/YAANq1a4d79+7hr7/+AgAolUrMmzcPRkZG8PLyKnK/RERERERERG+LxhJvY2Nj7NmzB4cOHYKtrS1sbW2hq6uLdevWSW1yc3Nx69YtJCQkAAA6d+6MefPmYciQIXB2dkalSpWwefNmbNmyBY6OjkXul4iIiIiIiOht0dg93gDQrFkzhIWF4fHjx1AoFHBwcJDVm5mZ4caNG3BycpLKpk2bhsmTJ+PZs2fQ19dH5cqVi90vERERERER0dui0cQbALS0tFC1atUC67S1tVGnTh2Vch0dHbi4uJS4XyIiIiIiIqK3RWOXmhMRERERERFVBEy8iYiIiIiIiNSIiTcRERERERGRGjHxJiIiIiIiIlIjJt5EREREREREasTEm4iIiIiIiEiNmHgTERERERERqRETbyIiIiIiIiI1YuJNREREREREpEZMvImIiIiIiIjUiIk3ERERERERkRox8SYiIiIiIiJSIybeRERERERERGrExJuIiIiIiIhIjZh4ExEREREREakRE28iIiIiIiIiNWLiTURERERERKRGTLyJiIiIiIiI1IiJNxEREREREZEaMfEmIiIiIiIiUiMm3kRERERERERqxMSbiIiIiIiISI2YeBMRERERERGpERNvIiIiIiIiIjVi4k1ERERERESkRky8iYiIiIiIiNSIiTcRERERERGRGjHxJiIiIiIiIlIjJt5EREREREREasTEm4iIiIiI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r7/+wtKlS/H111/Dy8sLP/zww1vaOm/HkCFD4OTkhE2bNuHp06dwc3PDmTNnpFviZs6ciWbNmmHz5s04ceIE3NzcMHPmTLRp00bqY86cOWjYsCG2bduGo0ePonXr1vjqq6+k+kWLFsHT0xPbt29HVlYWevfujUmTJsni8PLykgZWy1evXj3Zj7JLly7F/PnzsXbtWtjb22Pp0qVYv3697F7aiqJz58749ttvsXbtWiQlJeHrr7+Gq6urynO77ezs0KxZM2n69e8/Bc0D5A0GZmFhgd27d8PCwgITJ07E9evXpYHAKpJmzZqpnISoW7eu7Afvxo0by96HixcvhqurK9avX4/KlSvjp59+wieffCKNj1PUfj///HM0atQIGzduREhICKpWrYrPPvsM7733HgDA398flStXxvr16/Hnn39KyXf+FUI//fSTlGtkZma+U8/y1hL5I3EQERFpQGZmJvT19aUfNIQQaNiwIbp164bvvvtOw9ERERFRRkaG7GTdkydPUK1aNQQFBb1TZ501iYk3ERFpVFhYGP73v/9h6NChMDAwwPr16xEUFISrV6/ycn0iIqIyYPny5bhz5w78/PyQkJCAuXPnwtLSEqdOneIl+0XExJuIiDTu6NGjWL9+PeLi4lCrVi1MnjyZj9QhIiIqI5RKJZYvXy6NXeTl5YUJEyZU2DEJSoKJNxEREREREZEa8XFiRERERERERGrExJuIiIiIiIhIjZh4ExEREREREakRE28iIiIiIiIiNWLiTaRh27dvR1RUlKbDqJBe3/bcF0RE9Lrnz59j69at4HjEb9/r2577gt5lTLyJNGzw4MG4cuWKpsMo97Zt24aYmBhZ2evbnvuCiIhed/v2bXzwwQfIzc3VdCjlWmxsLLZu3Sore33bc1/Qu4yJN5GG9e/fn88rfgsGDhyIq1evysq47YmI6N9UqlQJ/v7+0Nbm12Z1unHjBj744ANZGbc9lSe6mg6AqKLr3r077OzsAABCCPz5559o164dsrKycOPGDVhbW6NZs2Yq82VkZODcuXNIS0uDl5cXrKysZPUvX77E2bNnAQAtWrSQ1f9zORkZGbh58yasra3RvHlzAMD9+/dx584duLu7o06dOirLTk9Px9mzZ5Geno569erB2dn5X9czMjISV65cgYuLC+rVq4e///4bTZs2hZOTEzIyMrB79250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" /></p>
+<h2 id="what-we-learned">What we learned<a class="headerlink" href="#what-we-learned" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Conformal intervals around a point prediction have a constant width, and are valid on average
+  but uneven across inputs.</li>
+<li>Giving <code>SplitConformalRegressor</code> the model's predicted standard deviation (<code>scale=</code>) keeps the
+  90% guarantee and makes the intervals adapt: narrower on average, and fairer across groups.</li>
+<li>The scale can come from a <code>GaussianHead</code>, a <code>MixtureGaussianHead</code>
+  (<code>keras_proba.ops.mixture_mean_and_stddev</code>) or the spread of a Bayesian model's predictions.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
