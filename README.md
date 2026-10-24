@@ -1,5 +1,7 @@
 # Keras Probability: Uncertainty Awareness in Deep Learning
 
+Documentation: https://anas-rz.github.io/keras-proba/
+
 Install directly from GitHub:
 
 ```bash

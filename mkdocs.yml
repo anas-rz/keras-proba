@@ -1,0 +1,90 @@
+site_name: Keras Probability
+site_description: Uncertainty awareness in deep learning with multi-backend Keras 3
+site_author: Muhammad Anas Raza
+repo_url: https://github.com/anas-rz/keras-proba
+repo_name: anas-rz/keras-proba
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            # Render from the imported objects: some docstrings are completed at import time.
+            force_inspection: true
+            docstring_style: google
+            docstring_options:
+              # Argument types are given by the signatures and descriptions, not annotations.
+              warn_missing_types: false
+            show_root_heading: true
+            show_root_full_path: false
+            show_source: false
+            show_signature_annotations: false
+            separate_signature: true
+            members_order: source
+            show_if_no_docstring: false
+            merge_init_into_class: true
+            heading_level: 2
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.arithmatex:
+      generic: true
+  - tables
+  - attr_list
+  - footnotes
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Getting Started: getting_started.md
+  - Guides:
+      - Distance-aware models (SNGP): guides/sngp.md
+      - Bayesian layers: guides/bayesian.md
+      - Probabilistic regression: guides/regression.md
+      - Calibration: guides/calibration.md
+      - Conformal prediction: guides/conformal.md
+  - API Reference:
+      - keras_proba.layers: api/layers.md
+      - keras_proba.losses: api/losses.md
+      - keras_proba.metrics: api/metrics.md
+      - keras_proba.callbacks: api/callbacks.md
+      - keras_proba.postprocessing: api/postprocessing.md
+      - keras_proba.ops: api/ops.md
+      - keras_proba.stats: api/stats.md
+  - Testing: testing.md

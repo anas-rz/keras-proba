@@ -225,19 +225,17 @@ def expected_calibration_error_quantiles(hit, pred_log_prob, num_buckets=20, axi
             `pred_log_prob` instead of `exp(pred_log_prob)`.
 
     Returns:
-        Tuple of:
-        - `ece`: Expected calibration error, with the shape of
-          `pred_log_prob` reduced over `axis`.
-        - `bucket_accuracy`: Within-bucket average hits, shape
-          `(num_buckets, ...)`.
-        - `bucket_confidence`: Within-bucket average probability, shape
-          `(num_buckets, ...)`.
-        - `bucket_count`: Number of observations per bucket, shape
-          `(num_buckets, ...)`.
-        - `bucket_pred_log_prob`: Bucket edges in log space, shape
-          `(num_buckets + 1, ...)`.
-        - `bucket`: Bucket of each observation, with the shape of
-          `pred_log_prob`.
+        ece: Expected calibration error, with the shape of `pred_log_prob`
+            reduced over `axis`.
+        bucket_accuracy: Within-bucket average hits, of shape
+            `(num_buckets, ...)`.
+        bucket_confidence: Within-bucket average probability, of shape
+            `(num_buckets, ...)`.
+        bucket_count: Number of observations per bucket, of shape
+            `(num_buckets, ...)`.
+        bucket_pred_log_prob: Bucket edges in log space, of shape
+            `(num_buckets + 1, ...)`.
+        bucket: Bucket of each observation, with the shape of `pred_log_prob`.
     """
     pred_log_prob = ops.convert_to_tensor(pred_log_prob)
     if not keras.backend.is_float_dtype(pred_log_prob.dtype):

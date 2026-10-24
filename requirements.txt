@@ -1,0 +1,4 @@
+# Runtime dependencies are declared in pyproject.toml and installed with `pip install -e .`.
+# Building the docs imports keras_proba (the API reference is rendered from the imported
+# objects), which needs a Keras backend: the CPU build of JAX is the lightest.
+jax[cpu]

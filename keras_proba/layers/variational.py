@@ -183,10 +183,36 @@ _CONV_ARGS_DOC = """
 
 
 class _DenseVariational(_Variational):
-    def __init__(self, units, **kwargs):
+    # The shared arguments are spelled out, rather than passed as `**kwargs`, so
+    # that they appear in the public signatures.
+    def __init__(
+        self,
+        units,
+        activation=None,
+        use_bias=True,
+        kernel_loc_initializer=None,
+        kernel_untransformed_scale_initializer=None,
+        bias_initializer=None,
+        kernel_prior_scale=1.0,
+        kl_weight=1.0,
+        seed=None,
+        activity_regularizer=None,
+        **kwargs,
+    ):
         if units <= 0:
             raise ValueError(f"`units` should be a positive integer. Received: {units}")
-        super().__init__(**kwargs)
+        super().__init__(
+            activation=activation,
+            use_bias=use_bias,
+            kernel_loc_initializer=kernel_loc_initializer,
+            kernel_untransformed_scale_initializer=kernel_untransformed_scale_initializer,
+            bias_initializer=bias_initializer,
+            kernel_prior_scale=kernel_prior_scale,
+            kl_weight=kl_weight,
+            seed=seed,
+            activity_regularizer=activity_regularizer,
+            **kwargs,
+        )
         self.units = units
 
     def build(self, input_shape):
@@ -310,11 +336,31 @@ class _ConvVariational(_Variational):
         padding="valid",
         data_format="channels_last",
         dilation_rate=1,
+        activation=None,
+        use_bias=True,
+        kernel_loc_initializer=None,
+        kernel_untransformed_scale_initializer=None,
+        bias_initializer=None,
+        kernel_prior_scale=1.0,
+        kl_weight=1.0,
+        seed=None,
+        activity_regularizer=None,
         **kwargs,
     ):
         if filters <= 0:
             raise ValueError(f"`filters` should be a positive integer. Received: {filters}")
-        super().__init__(**kwargs)
+        super().__init__(
+            activation=activation,
+            use_bias=use_bias,
+            kernel_loc_initializer=kernel_loc_initializer,
+            kernel_untransformed_scale_initializer=kernel_untransformed_scale_initializer,
+            bias_initializer=bias_initializer,
+            kernel_prior_scale=kernel_prior_scale,
+            kl_weight=kl_weight,
+            seed=seed,
+            activity_regularizer=activity_regularizer,
+            **kwargs,
+        )
         self.filters = filters
         self.kernel_size = _normalize_tuple(kernel_size, self.rank, "kernel_size")
         self.strides = _normalize_tuple(strides, self.rank, "strides")
