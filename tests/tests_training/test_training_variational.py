@@ -7,7 +7,10 @@ import keras
 from keras import ops
 
 from keras_proba.layers.variational import (
+    Conv1DFlipout,
+    Conv1DReparameterization,
     Conv2DFlipout,
+    Conv3DFlipout,
     DenseFlipout,
     DenseLocalReparameterization,
     DenseReparameterization,
@@ -101,16 +104,20 @@ def test_kl_weight_pulls_posterior_towards_prior():
     assert scales[1.0] < 1.2
 
 
-def test_conv_flipout_classifier():
+@pytest.mark.parametrize("conv_cls", [Conv1DFlipout, Conv2DFlipout, Conv3DFlipout, Conv1DReparameterization])
+def test_conv_classifier(conv_cls):
+    """The label is whether the first half of the input (along the first spatial axis) is brighter."""
     keras.utils.set_random_seed(0)
     rng = np.random.default_rng(0)
-    x = rng.normal(size=(256, 8, 8, 1)).astype("float32")
-    y = (x[:, :4].mean((1, 2, 3)) > x[:, 4:].mean((1, 2, 3))).astype("int32")
+    spatial = (8,) * conv_cls.rank
+    x = rng.normal(size=(256, *spatial, 1)).astype("float32")
+    other_axes = tuple(range(1, conv_cls.rank + 2))
+    y = (x[:, :4].mean(other_axes) > x[:, 4:].mean(other_axes)).astype("int32")
     kl_weight = 1.0 / len(x)
     model = keras.Sequential(
         [
-            keras.Input((8, 8, 1)),
-            Conv2DFlipout(8, 3, padding="same", activation="relu", kl_weight=kl_weight),
+            keras.Input(spatial + (1,)),
+            conv_cls(8, 3, padding="same", activation="relu", kl_weight=kl_weight),
             # The label depends on where the signal is, so keep the spatial layout.
             keras.layers.Flatten(),
             DenseFlipout(2, kl_weight=kl_weight),

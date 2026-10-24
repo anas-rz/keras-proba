@@ -28,8 +28,12 @@ import keras  # noqa: E402
 from keras import ops  # noqa: E402
 
 from keras_proba.layers.variational import (  # noqa: E402
+    Conv1DFlipout,
+    Conv1DReparameterization,
     Conv2DFlipout,
     Conv2DReparameterization,
+    Conv3DFlipout,
+    Conv3DReparameterization,
     DenseFlipout,
     DenseLocalReparameterization,
     DenseReparameterization,
@@ -39,9 +43,19 @@ PAIRS = {
     "reparameterization": (tfp_dense.DenseReparameterization, DenseReparameterization),
     "local_reparameterization": (tfp_dense.DenseLocalReparameterization, DenseLocalReparameterization),
     "flipout": (tfp_dense.DenseFlipout, DenseFlipout),
-    "conv_reparameterization": (tfp_conv.Conv2DReparameterization, Conv2DReparameterization),
-    "conv_flipout": (tfp_conv.Conv2DFlipout, Conv2DFlipout),
+    "conv1d_reparameterization": (tfp_conv.Conv1DReparameterization, Conv1DReparameterization),
+    "conv1d_flipout": (tfp_conv.Conv1DFlipout, Conv1DFlipout),
+    "conv2d_reparameterization": (tfp_conv.Conv2DReparameterization, Conv2DReparameterization),
+    "conv2d_flipout": (tfp_conv.Conv2DFlipout, Conv2DFlipout),
+    "conv3d_reparameterization": (tfp_conv.Conv3DReparameterization, Conv3DReparameterization),
+    "conv3d_flipout": (tfp_conv.Conv3DFlipout, Conv3DFlipout),
 }
+CONV_KINDS = [kind for kind in PAIRS if kind.startswith("conv")]
+CONV_INPUT_SHAPES = {1: (2, 11, 3), 2: (2, 9, 8, 3), 3: (2, 7, 6, 5, 3)}
+
+
+def conv_rank(kind):
+    return int(kind[len("conv")])
 
 
 @pytest.fixture
@@ -161,30 +175,45 @@ def test_kl_weight_and_prior_scale_parity():
 CONV_CONFIGS = [
     {"filters": 3, "kernel_size": 3},
     {"filters": 3, "kernel_size": 3, "padding": "same"},
-    {"filters": 4, "kernel_size": (3, 2), "strides": 2, "padding": "same"},
+    {"filters": 4, "kernel_size": "asymmetric", "strides": 2, "padding": "same"},
     {"filters": 2, "kernel_size": 3, "dilation_rate": 2},
     {"filters": 2, "kernel_size": 1, "activation": "relu"},
 ]
 
 
-@pytest.mark.parametrize("kind", ["conv_reparameterization", "conv_flipout"])
+@pytest.mark.parametrize("kind", CONV_KINDS)
 @pytest.mark.parametrize("config", CONV_CONFIGS)
 def test_conv_forward_parity(kind, config, recorded_signs):
+    rank = conv_rank(kind)
+    config = dict(config)
+    if config["kernel_size"] == "asymmetric":
+        config["kernel_size"] = (3, 2, 1)[:rank]
     rng = np.random.default_rng(0)
-    x = rng.normal(size=(2, 9, 8, 3)).astype("float32")
+    x = rng.normal(size=CONV_INPUT_SHAPES[rank]).astype("float32")
     tf_layer, k_layer, tf_out, k_out = run_pair(kind, x, recorded_signs, **config)
     assert k_out.shape == tf_out.shape == k_layer.compute_output_shape(x.shape)
     np.testing.assert_allclose(k_out, tf_out, rtol=1e-4, atol=1e-5)
     np.testing.assert_allclose(ops.convert_to_numpy(k_layer.losses[0]), tf_layer.losses[0].numpy(), rtol=1e-5)
 
 
+@pytest.mark.parametrize("kind", CONV_KINDS)
+def test_conv_weights_parity(kind):
+    tf_cls, k_cls = PAIRS[kind]
+    shape = CONV_INPUT_SHAPES[conv_rank(kind)]
+    tf_layer, k_layer = tf_cls(4, 3), k_cls(4, 3)
+    tf_layer.build(shape)
+    k_layer.build(shape)
+    tf_weights = {w.name.split("/")[-1].split(":")[0]: tuple(w.shape) for w in tf_layer.trainable_weights}
+    assert {w.name: tuple(w.shape) for w in k_layer.trainable_weights} == tf_weights
+
+
 @pytest.mark.skipif(keras.backend.backend() != "tensorflow", reason="Uses tf.GradientTape on the Keras 3 layer.")
-@pytest.mark.parametrize("kind", DENSE_KINDS + ["conv_reparameterization", "conv_flipout"])
+@pytest.mark.parametrize("kind", DENSE_KINDS + CONV_KINDS)
 def test_gradient_parity(kind, recorded_signs):
     """With the same noise, the loss gradients with respect to every posterior parameter match."""
     rng = np.random.default_rng(0)
     conv = kind.startswith("conv")
-    x = rng.normal(size=(2, 6, 6, 2) if conv else (6, 5)).astype("float32")
+    x = rng.normal(size=CONV_INPUT_SHAPES[conv_rank(kind)] if conv else (6, 5)).astype("float32")
     kwargs = {"filters": 3, "kernel_size": 3} if conv else {"units": 4}
     tf_cls, k_cls = PAIRS[kind]
     tf_layer, k_layer = tf_cls(**kwargs), k_cls(**kwargs)

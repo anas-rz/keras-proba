@@ -7,8 +7,12 @@ import keras
 from keras import ops
 
 from keras_proba.layers.variational import (
+    Conv1DFlipout,
+    Conv1DReparameterization,
     Conv2DFlipout,
     Conv2DReparameterization,
+    Conv3DFlipout,
+    Conv3DReparameterization,
     DenseFlipout,
     DenseLocalReparameterization,
     DenseReparameterization,
@@ -29,8 +33,12 @@ from keras_proba.layers.variational import (
             seed=3,
             activity_regularizer="l2",
         ),
+        Conv1DReparameterization(4, 5, dilation_rate=2),
+        Conv1DFlipout(4, 3, strides=2, padding="same", seed=2),
         Conv2DReparameterization(4, 3),
         Conv2DFlipout(4, (3, 2), strides=2, padding="same", dilation_rate=1, data_format="channels_first", seed=1),
+        Conv3DReparameterization(2, (3, 2, 1), padding="same"),
+        Conv3DFlipout(2, 3, data_format="channels_first", kl_weight=0.1),
     ],
 )
 def test_config_round_trip(layer):
@@ -40,18 +48,20 @@ def test_config_round_trip(layer):
     assert keras.layers.deserialize(keras.layers.serialize(layer)).get_config() == config
 
 
-def test_model_save_and_load(tmp_path):
+@pytest.mark.parametrize("conv_cls", [Conv1DFlipout, Conv2DFlipout, Conv3DReparameterization])
+def test_model_save_and_load(tmp_path, conv_cls):
     keras.utils.set_random_seed(0)
+    spatial = (6,) * conv_cls.rank
     model = keras.Sequential(
         [
-            keras.Input((6, 6, 1)),
-            Conv2DFlipout(2, 3, activation="relu", kl_weight=0.01),
+            keras.Input(spatial + (1,)),
+            conv_cls(2, 3, activation="relu", kl_weight=0.01),
             keras.layers.Flatten(),
             DenseReparameterization(3, kl_weight=0.01),
         ]
     )
     model.compile(optimizer="adam", loss="mse")
-    x = np.random.randn(16, 6, 6, 1).astype("float32")
+    x = np.random.randn(16, *spatial, 1).astype("float32")
     model.fit(x, np.random.randn(16, 3).astype("float32"), epochs=1, verbose=0)
 
     path = tmp_path / "model.keras"

@@ -174,11 +174,12 @@ _COMMON_ARGS_DOC = """
 
 _CONV_ARGS_DOC = """
         filters: Number of output channels.
-        kernel_size: Int or tuple of 2 ints, the convolution window.
-        strides: Int or tuple of 2 ints.
+        kernel_size: Int or tuple of ints, one per spatial dimension: the
+            convolution window.
+        strides: Int or tuple of ints, one per spatial dimension.
         padding: `"valid"` or `"same"`.
         data_format: `"channels_last"` or `"channels_first"`.
-        dilation_rate: Int or tuple of 2 ints."""
+        dilation_rate: Int or tuple of ints, one per spatial dimension."""
 
 
 class _DenseVariational(_Variational):
@@ -296,7 +297,11 @@ def _normalize_tuple(value, n, name):
     return value
 
 
-class _Conv2DVariational(_Variational):
+class _ConvVariational(_Variational):
+    """Shared convolution handling; subclasses set `rank`, the number of spatial dimensions."""
+
+    rank = None
+
     def __init__(
         self,
         filters,
@@ -311,8 +316,8 @@ class _Conv2DVariational(_Variational):
             raise ValueError(f"`filters` should be a positive integer. Received: {filters}")
         super().__init__(**kwargs)
         self.filters = filters
-        self.kernel_size = _normalize_tuple(kernel_size, 2, "kernel_size")
-        self.strides = _normalize_tuple(strides, 2, "strides")
+        self.kernel_size = _normalize_tuple(kernel_size, self.rank, "kernel_size")
+        self.strides = _normalize_tuple(strides, self.rank, "strides")
         self.padding = padding.lower()
         if self.padding not in ("valid", "same"):
             raise ValueError(f'`padding` must be "valid" or "same". Received: {padding}')
@@ -321,14 +326,14 @@ class _Conv2DVariational(_Variational):
             raise ValueError(
                 f'`data_format` must be "channels_last" or "channels_first". Received: {data_format}'
             )
-        self.dilation_rate = _normalize_tuple(dilation_rate, 2, "dilation_rate")
+        self.dilation_rate = _normalize_tuple(dilation_rate, self.rank, "dilation_rate")
         self._channel_axis = -1 if self.data_format == "channels_last" else 1
 
     def build(self, input_shape):
         in_channels = input_shape[self._channel_axis]
         if in_channels is None:
             raise ValueError(f"The channel dimension of the inputs must be defined. Found `None`: {input_shape}")
-        self.input_spec = keras.layers.InputSpec(ndim=4, axes={self._channel_axis: in_channels})
+        self.input_spec = keras.layers.InputSpec(ndim=self.rank + 2, axes={self._channel_axis: in_channels})
         self._build_posterior(self.kernel_size + (in_channels, self.filters), (self.filters,))
 
     def _convolution_op(self, inputs, kernel):
@@ -341,6 +346,13 @@ class _Conv2DVariational(_Variational):
             dilation_rate=self.dilation_rate,
         )
 
+    def _channel_shape(self, batch_size, channels):
+        """Shape of a per-example, per-channel tensor that broadcasts over the spatial dimensions."""
+        spatial = (1,) * self.rank
+        if self.data_format == "channels_last":
+            return (batch_size, *spatial, channels)
+        return (batch_size, channels, *spatial)
+
     def call(self, inputs):
         outputs = self._apply_variational_kernel(inputs)
         if self.data_format == "channels_first":
@@ -349,7 +361,7 @@ class _Conv2DVariational(_Variational):
         return self._finish(outputs)
 
     def compute_output_shape(self, input_shape):
-        spatial = input_shape[1:3] if self.data_format == "channels_last" else input_shape[2:4]
+        spatial = input_shape[1:-1] if self.data_format == "channels_last" else input_shape[2:]
         out_spatial = []
         for size, k, s, d in zip(spatial, self.kernel_size, self.strides, self.dilation_rate):
             if size is None:
@@ -374,10 +386,31 @@ class _Conv2DVariational(_Variational):
         return {**super().get_config(), **config}
 
 
+class _ConvReparameterization(_ConvVariational):
+    def _apply_variational_kernel(self, inputs):
+        return self._convolution_op(inputs, self._sample_kernel(inputs.dtype))
+
+
+class _ConvFlipout(_ConvVariational):
+    def _apply_variational_kernel(self, inputs):
+        dtype = inputs.dtype
+        scale = ops.cast(self.kernel_posterior_scale, dtype)
+        perturbation = scale * self._standard_normal(ops.shape(scale), dtype)
+
+        batch_size = ops.shape(inputs)[0]
+        in_channels = inputs.shape[self._channel_axis]
+        # Signs per example and channel, broadcast over the spatial dimensions.
+        sign_input = self._rademacher(self._channel_shape(batch_size, in_channels), dtype)
+        sign_output = self._rademacher(self._channel_shape(batch_size, self.filters), dtype)
+
+        outputs = self._convolution_op(inputs, ops.cast(self.kernel_posterior_loc, dtype))
+        return outputs + self._convolution_op(inputs * sign_input, perturbation) * sign_output
+
+
 @keras.saving.register_keras_serializable(package="keras_proba")
 @_expand_docstring
-class Conv2DReparameterization(_Conv2DVariational):
-    """Bayesian 2D convolution with the reparameterization estimator [1].
+class Conv1DReparameterization(_ConvReparameterization):
+    """Bayesian 1D convolution (e.g. temporal convolution) with the reparameterization estimator [1].
 
     One kernel `W ~ q(W)` is sampled per call.
 
@@ -386,14 +419,13 @@ ${conv_args}
 ${common_args}
     """
 
-    def _apply_variational_kernel(self, inputs):
-        return self._convolution_op(inputs, self._sample_kernel(inputs.dtype))
+    rank = 1
 
 
 @keras.saving.register_keras_serializable(package="keras_proba")
 @_expand_docstring
-class Conv2DFlipout(_Conv2DVariational):
-    """Bayesian 2D convolution with the Flipout estimator [3].
+class Conv1DFlipout(_ConvFlipout):
+    """Bayesian 1D convolution (e.g. temporal convolution) with the Flipout estimator [3].
 
     Samples one kernel perturbation per call, decorrelated across examples with
     random signs per example and channel:
@@ -404,20 +436,68 @@ ${conv_args}
 ${common_args}
     """
 
-    def _apply_variational_kernel(self, inputs):
-        dtype = inputs.dtype
-        scale = ops.cast(self.kernel_posterior_scale, dtype)
-        perturbation = scale * self._standard_normal(ops.shape(scale), dtype)
+    rank = 1
 
-        batch_size = ops.shape(inputs)[0]
-        in_channels = inputs.shape[self._channel_axis]
-        # Signs per example and channel, broadcast over the spatial dimensions.
-        if self.data_format == "channels_last":
-            sign_input_shape, sign_output_shape = (batch_size, 1, 1, in_channels), (batch_size, 1, 1, self.filters)
-        else:
-            sign_input_shape, sign_output_shape = (batch_size, in_channels, 1, 1), (batch_size, self.filters, 1, 1)
-        sign_input = self._rademacher(sign_input_shape, dtype)
-        sign_output = self._rademacher(sign_output_shape, dtype)
 
-        outputs = self._convolution_op(inputs, ops.cast(self.kernel_posterior_loc, dtype))
-        return outputs + self._convolution_op(inputs * sign_input, perturbation) * sign_output
+@keras.saving.register_keras_serializable(package="keras_proba")
+@_expand_docstring
+class Conv2DReparameterization(_ConvReparameterization):
+    """Bayesian 2D convolution (e.g. spatial convolution over images) with the reparameterization estimator [1].
+
+    One kernel `W ~ q(W)` is sampled per call.
+
+    Args:
+${conv_args}
+${common_args}
+    """
+
+    rank = 2
+
+
+@keras.saving.register_keras_serializable(package="keras_proba")
+@_expand_docstring
+class Conv2DFlipout(_ConvFlipout):
+    """Bayesian 2D convolution (e.g. spatial convolution over images) with the Flipout estimator [3].
+
+    Samples one kernel perturbation per call, decorrelated across examples with
+    random signs per example and channel:
+    `outputs = conv(inputs, loc) + conv(inputs * s_in, dW) * s_out`.
+
+    Args:
+${conv_args}
+${common_args}
+    """
+
+    rank = 2
+
+
+@keras.saving.register_keras_serializable(package="keras_proba")
+@_expand_docstring
+class Conv3DReparameterization(_ConvReparameterization):
+    """Bayesian 3D convolution (e.g. spatial convolution over volumes) with the reparameterization estimator [1].
+
+    One kernel `W ~ q(W)` is sampled per call.
+
+    Args:
+${conv_args}
+${common_args}
+    """
+
+    rank = 3
+
+
+@keras.saving.register_keras_serializable(package="keras_proba")
+@_expand_docstring
+class Conv3DFlipout(_ConvFlipout):
+    """Bayesian 3D convolution (e.g. spatial convolution over volumes) with the Flipout estimator [3].
+
+    Samples one kernel perturbation per call, decorrelated across examples with
+    random signs per example and channel:
+    `outputs = conv(inputs, loc) + conv(inputs * s_in, dW) * s_out`.
+
+    Args:
+${conv_args}
+${common_args}
+    """
+
+    rank = 3
