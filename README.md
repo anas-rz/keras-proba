@@ -2,6 +2,8 @@
 
 Documentation: https://anas-rz.github.io/keras-proba/
 
+Examples: [notebooks on real datasets](examples/), each runnable on Google Colab.
+
 Install from PyPI:
 
 ```bash

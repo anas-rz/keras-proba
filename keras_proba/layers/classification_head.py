@@ -83,6 +83,15 @@ class ClassificationHead(keras.layers.Layer):
             name="logits",
         )
 
+    def build(self, input_shape):
+        shape = tuple(input_shape)
+        if len(shape) == 3:
+            shape = (shape[0], shape[2])  # Pooled at `cls_token_idx`.
+        if self.inner_dim:
+            self.dense.build(shape)
+            shape = self.dense.compute_output_shape(shape)
+        self.out_proj.build(shape)
+
     def _project(self, features, training=None):
         x = features
         if len(features.shape) == 3:

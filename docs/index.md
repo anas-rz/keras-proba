@@ -78,7 +78,8 @@ probs = keras.ops.softmax(model.predict(np.array([[0.5, 0.5], [8.0, -8.0]], "flo
 # Confident near the data, close to uniform far from it.
 ```
 
-Continue with [Getting Started](getting_started.md), or jump to a [guide](guides/sngp.md).
+Continue with [Getting Started](getting_started.md), jump to a [guide](guides/sngp.md), or run an
+[example notebook](examples/index.md) on Google Colab.
 
 ---
 
