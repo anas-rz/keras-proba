@@ -1,9 +1,21 @@
 name: Tests
 
+# Only run when the code, the tests or what they depend on change. Documentation-only
+# changes are checked by the Docs workflow alone.
 on:
   push:
     branches: [main]
+    paths:
+      - "keras_proba/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/tests.yml"
   pull_request:
+    paths:
+      - "keras_proba/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/tests.yml"
   workflow_dispatch:
 
 concurrency:
