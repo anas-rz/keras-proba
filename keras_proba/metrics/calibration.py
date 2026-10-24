@@ -22,6 +22,8 @@ import numpy as np
 import keras
 from keras import ops
 
+from keras_proba.stats.quantiles import quantiles
+
 
 def _finfo(dtype):
     return np.finfo(keras.backend.standardize_dtype(dtype))
@@ -175,19 +177,6 @@ def expected_calibration_error(num_bins, logits=None, labels_true=None, labels_p
     return _ece_from_bin_statistics(*stats)
 
 
-def _quantile_edges(x, num_quantiles):
-    """`num_quantiles + 1` edges of `x` along axis 0, with "nearest" interpolation.
-
-    Equivalent to `tfp.stats.quantiles(x, num_quantiles, axis=0)`.
-    """
-    n = x.shape[0]
-    if n is None:
-        raise ValueError("The size of the bucketed axis must be known.")
-    frac = np.linspace(0.0, 1.0, num_quantiles + 1)
-    indices = np.clip(np.round((n - 1) * frac).astype("int32"), 0, n - 1)
-    return ops.take(ops.sort(x, axis=0), indices, axis=0)
-
-
 def _find_buckets(x, edges):
     """Bucket of each `x` given sorted `edges` along axis 0, as TFP's `_find_bins`.
 
@@ -265,11 +254,11 @@ def expected_calibration_error_quantiles(hit, pred_log_prob, num_buckets=20, axi
     # so comparing there is exact, whereas a log/exp round trip can move values
     # lying on an edge into the next bucket depending on the backend.
     if log_space_buckets:
-        bucket_pred_log_prob = _quantile_edges(pred_log_prob, num_buckets)
+        bucket_pred_log_prob = quantiles(pred_log_prob, num_buckets, axis=0)
         bucket = _find_buckets(pred_log_prob, bucket_pred_log_prob)
     else:
         pred_prob = ops.exp(pred_log_prob)
-        bucket_pred_prob = _quantile_edges(pred_prob, num_buckets)
+        bucket_pred_prob = quantiles(pred_prob, num_buckets, axis=0)
         bucket = _find_buckets(pred_prob, bucket_pred_prob)
         bucket_pred_log_prob = ops.log(bucket_pred_prob)
 
