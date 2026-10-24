@@ -1,4 +1,4 @@
-Keras Uncertainty: Uncertainty Awareness in Deep Learning
+# Keras Uncertainty: Uncertainty Awareness in Deep Learning
 
 # Layers
 
@@ -11,3 +11,9 @@ Keras Uncertainty: Uncertainty Awareness in Deep Learning
 * [ ] Calibration, Conformal Prediction, etc.
 
 # Existing Models (If any)
+
+
+# Tests
+* [ ] Parity
+* [ ] Training
+* [ ] Smoke Tests
