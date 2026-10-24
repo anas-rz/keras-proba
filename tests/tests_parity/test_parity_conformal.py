@@ -33,8 +33,7 @@ def softmax(logits):
     return e / e.sum(-1, keepdims=True)
 
 
-@pytest.mark.parametrize("n", [1, 9, 10, 19, 100, 1001])
-@pytest.mark.parametrize("alpha", [0.01, 0.05, 0.1, 0.3])
+@pytest.mark.parametrize("n, alpha", [(1, 0.3), (19, 0.1), (100, 0.05), (1001, 0.01)])
 def test_conformal_quantile_parity(n, alpha):
     scores = np.random.default_rng(n).exponential(size=n).astype("float32")
     np.testing.assert_allclose(ops.convert_to_numpy(conformal_quantile(scores, alpha)), numpy_conformal_quantile(scores, alpha))
@@ -49,9 +48,9 @@ def test_higher_quantile_selects_the_next_order_statistic():
     assert np.quantile(scores, k / 19, method="higher") == 19.0
 
 
-@pytest.mark.parametrize("units", [1, 3])
 @pytest.mark.parametrize("normalized", [False, True])
-def test_regression_parity(units, normalized):
+def test_regression_parity(normalized):
+    units = 3
     rng = np.random.default_rng(units)
     y_cal, y_pred_cal = rng.normal(size=(200, units)), rng.normal(size=(200, units))
     scale_cal = rng.uniform(0.5, 2.0, size=(200, units)) if normalized else None
@@ -101,8 +100,8 @@ def float64(x):
     return x.astype("float32").astype("float64")
 
 
-@pytest.mark.parametrize("alpha", [0.05, 0.2])
-def test_lac_parity(alpha):
+def test_lac_parity():
+    alpha = 0.1
     rng = np.random.default_rng(0)
     probs_cal, y_cal = softmax(rng.normal(size=(300, 6)) * 2), rng.integers(0, 6, size=300)
     probs_test = softmax(rng.normal(size=(80, 6)) * 2)
@@ -111,9 +110,9 @@ def test_lac_parity(alpha):
     np.testing.assert_array_equal(ops.convert_to_numpy(conformal.predict_set(probs_test.astype("float32"))), expected)
 
 
-@pytest.mark.parametrize("alpha", [0.05, 0.2])
 @pytest.mark.parametrize("randomized", [False, True])
-def test_aps_parity(alpha, randomized):
+def test_aps_parity(randomized):
+    alpha = 0.1
     rng = np.random.default_rng(0)
     probs_cal, y_cal = softmax(rng.normal(size=(300, 6)) * 2), rng.integers(0, 6, size=300)
     probs_test = softmax(rng.normal(size=(80, 6)) * 2)

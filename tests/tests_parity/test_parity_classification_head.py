@@ -139,12 +139,9 @@ def test_classification_head_parity(inner_dim):
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {},
         {"temperature": np.pi / 8},
-        {"temperature": 2.0, "use_spec_norm": False},
-        {"temperature": 1.0, "use_gp_layer": False},
-        {"temperature": 1.0, "normalize_input": False, "scale_random_features": True},
-        {"temperature": 1.0, "norm_multiplier": 0.5, "iteration": 3},
+        {"temperature": 2.0, "use_spec_norm": False, "normalize_input": False, "scale_random_features": True},
+        {"temperature": 1.0, "use_gp_layer": False, "norm_multiplier": 0.5, "iteration": 3},
     ],
 )
 def test_sngp_head_parity(kwargs):

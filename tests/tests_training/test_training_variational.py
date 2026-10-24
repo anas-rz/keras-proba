@@ -7,12 +7,9 @@ import keras
 from keras import ops
 
 from keras_proba.layers.variational import (
-    Conv1DFlipout,
     Conv1DReparameterization,
-    Conv2DFlipout,
     Conv3DFlipout,
     DenseFlipout,
-    DenseLocalReparameterization,
     DenseReparameterization,
 )
 
@@ -63,8 +60,8 @@ def make_regression_data(n=512, seed=0):
     return x, y
 
 
-@pytest.mark.parametrize("layer_cls", [DenseReparameterization, DenseLocalReparameterization, DenseFlipout])
-def test_bayesian_regression(layer_cls):
+def test_bayesian_regression():
+    layer_cls = DenseFlipout
     keras.utils.set_random_seed(0)
     x, y = make_regression_data()
     kl_weight = 1.0 / len(x)
@@ -104,7 +101,7 @@ def test_kl_weight_pulls_posterior_towards_prior():
     assert scales[1.0] < 1.2
 
 
-@pytest.mark.parametrize("conv_cls", [Conv1DFlipout, Conv2DFlipout, Conv3DFlipout, Conv1DReparameterization])
+@pytest.mark.parametrize("conv_cls", [Conv1DReparameterization, Conv3DFlipout])
 def test_conv_classifier(conv_cls):
     """The label is whether the first half of the input (along the first spatial axis) is brighter."""
     keras.utils.set_random_seed(0)

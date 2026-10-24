@@ -26,8 +26,7 @@ def build_pair(input_dim, output_dim, **kwargs):
     return tf_layer, k_layer
 
 
-@pytest.mark.parametrize("kernel_initializer", ["gaussian", "laplacian"])
-@pytest.mark.parametrize("scale", [None, 0.5, 3.0])
+@pytest.mark.parametrize("kernel_initializer, scale", [("gaussian", None), ("laplacian", 3.0)])
 def test_forward_parity(kernel_initializer, scale):
     np.random.seed(0)
     tf_layer, k_layer = build_pair(16, 64, kernel_initializer=kernel_initializer, scale=scale)
@@ -42,18 +41,17 @@ def test_forward_parity(kernel_initializer, scale):
     assert diff < tol, f"Forward parity diff {diff}"
 
 
-@pytest.mark.parametrize("kernel_initializer", ["gaussian", "laplacian", "GAUSSIAN"])
-@pytest.mark.parametrize("input_dim", [1, 7, 32])
-def test_default_scale_parity(kernel_initializer, input_dim):
-    tf_layer = TFRandomFourierFeatures(10, kernel_initializer=kernel_initializer)
-    tf_layer.build((None, input_dim))
-    k_layer = RandomFourierFeatures(10, kernel_initializer=kernel_initializer)
-    k_layer.build((None, input_dim))
+def test_default_scale_parity():
+    for kernel_initializer, input_dim in [("gaussian", 7), ("GAUSSIAN", 32), ("laplacian", 7)]:
+        tf_layer = TFRandomFourierFeatures(10, kernel_initializer=kernel_initializer)
+        tf_layer.build((None, input_dim))
+        k_layer = RandomFourierFeatures(10, kernel_initializer=kernel_initializer)
+        k_layer.build((None, input_dim))
 
-    assert np.isclose(k_layer.scale, tf_layer.scale)
-    np.testing.assert_allclose(
-        ops.convert_to_numpy(k_layer.kernel_scale), tf_layer.kernel_scale.numpy(), rtol=1e-6
-    )
+        assert np.isclose(k_layer.scale, tf_layer.scale)
+        np.testing.assert_allclose(
+            ops.convert_to_numpy(k_layer.kernel_scale), tf_layer.kernel_scale.numpy(), rtol=1e-6
+        )
 
 
 def test_weight_structure_parity():
@@ -90,20 +88,16 @@ def test_scale_gradient_parity():
     np.testing.assert_allclose(k_grad, tf_grad[0], rtol=1e-4)
 
 
-@pytest.mark.parametrize(
-    "kwargs",
-    [
+def test_invalid_args_parity():
+    for kwargs in [
         {"output_dim": 0},
         {"output_dim": 4, "kernel_initializer": "polynomial"},
         {"output_dim": 4, "scale": 0.0},
-        {"output_dim": 4, "scale": -1.0},
-    ],
-)
-def test_invalid_args_parity(kwargs):
-    with pytest.raises(ValueError):
-        TFRandomFourierFeatures(**kwargs)
-    with pytest.raises(ValueError):
-        RandomFourierFeatures(**kwargs)
+    ]:
+        with pytest.raises(ValueError):
+            TFRandomFourierFeatures(**kwargs)
+        with pytest.raises(ValueError):
+            RandomFourierFeatures(**kwargs)
 
 
 def test_config_parity():

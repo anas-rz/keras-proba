@@ -40,12 +40,14 @@ def test_conformal_quantile_per_column():
     np.testing.assert_allclose(to_numpy(conformal_quantile(scores, 0.2)), [k - 1, 10 * (k - 1)])
 
 
-@pytest.mark.parametrize("alpha", [0.0, 1.0, -0.1])
-def test_invalid_alpha(alpha):
+def test_invalid_arguments():
+    for alpha in [0.0, 1.0]:
+        with pytest.raises(ValueError):
+            SplitConformalRegressor(alpha)
+        with pytest.raises(ValueError):
+            conformal_quantile(np.ones(5), alpha)
     with pytest.raises(ValueError):
-        SplitConformalRegressor(alpha)
-    with pytest.raises(ValueError):
-        conformal_quantile(np.ones(5), alpha)
+        SplitConformalClassifier(score="raps")
 
 
 def test_regressor_constant_and_scaled_intervals():

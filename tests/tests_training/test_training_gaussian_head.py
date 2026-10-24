@@ -1,6 +1,7 @@
 """Training tests for GaussianHead and GaussianNLL. Run once per backend via `KERAS_BACKEND`."""
 
 import numpy as np
+import pytest
 
 import keras
 
@@ -29,12 +30,17 @@ def build_model():
     return model
 
 
-def test_learns_mean_and_heteroscedastic_scale():
+@pytest.fixture(scope="module")
+def trained_model():
     keras.utils.set_random_seed(0)
     x, y, _ = make_heteroscedastic_data()
     model = build_model()
-    history = model.fit(x, y, epochs=60, batch_size=128, verbose=0)
-    assert history.history["loss"][-1] < history.history["loss"][0]
+    model.fit(x, y, epochs=60, batch_size=128, verbose=0)
+    return model
+
+
+def test_learns_mean_and_heteroscedastic_scale(trained_model):
+    model = trained_model
 
     x_test = np.linspace(-2.5, 2.5, 51, dtype="float32")[:, None]
     mean, scale = (keras.ops.convert_to_numpy(t) for t in split_gaussian_params(model.predict(x_test, verbose=0)))
@@ -47,11 +53,8 @@ def test_learns_mean_and_heteroscedastic_scale():
     assert np.abs(scale - true_std).mean() < 0.12
 
 
-def test_predicted_intervals_are_calibrated():
-    keras.utils.set_random_seed(0)
-    x, y, _ = make_heteroscedastic_data()
-    model = build_model()
-    model.fit(x, y, epochs=60, batch_size=128, verbose=0)
+def test_predicted_intervals_are_calibrated(trained_model):
+    model = trained_model
 
     x_val, y_val, _ = make_heteroscedastic_data(n=4096, seed=1)
     mean, scale = (keras.ops.convert_to_numpy(t) for t in split_gaussian_params(model.predict(x_val, verbose=0)))

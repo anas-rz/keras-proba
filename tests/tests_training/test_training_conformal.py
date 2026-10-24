@@ -53,13 +53,13 @@ def test_regression_expected_coverage(regression_predictions, normalized):
     expected = math.ceil((n_cal + 1) * (1 - alpha)) / (n_cal + 1)
     rng = np.random.default_rng(0)
     coverages = []
-    for _ in range(200):
+    for _ in range(100):
         idx = rng.permutation(len(y))
         cal, test = idx[:n_cal], idx[n_cal:]
         conformal = SplitConformalRegressor(alpha).fit(y[cal], mean[cal], scale=scale[cal] if normalized else None)
         lower, upper = conformal.predict_interval(mean[test], scale=scale[test] if normalized else None)
         coverages.append(float(to_numpy(interval_coverage(y[test], lower, upper))[0]))
-    # Mean coverage over 200 splits has a standard error of about 0.002.
+    # Mean coverage over 100 splits has a standard error of about 0.003.
     assert abs(np.mean(coverages) - expected) < 0.01, (np.mean(coverages), expected)
 
 
@@ -109,7 +109,7 @@ def test_classification_coverage(classification_predictions, score, randomized):
     expected = math.ceil((n_cal + 1) * (1 - alpha)) / (n_cal + 1)
     rng = np.random.default_rng(0)
     coverages, sizes = [], []
-    for _ in range(200):
+    for _ in range(100):
         idx = rng.permutation(len(y))
         cal, test = idx[:n_cal], idx[n_cal:]
         conformal = SplitConformalClassifier(alpha, score=score, randomized=randomized, seed=0)

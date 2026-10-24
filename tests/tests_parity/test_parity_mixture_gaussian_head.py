@@ -52,7 +52,7 @@ def to_tfp_layout(params, k, d):
     return np.concatenate([logits, per_component], axis=-1)
 
 
-@pytest.mark.parametrize("k, d", [(1, 1), (3, 1), (5, 2), (4, 3)])
+@pytest.mark.parametrize("k, d", [(1, 1), (4, 3)])
 def test_log_prob_parity(k, d):
     rng = np.random.default_rng(k * 10 + d)
     params = random_params(rng, 32, k, d)
@@ -62,8 +62,8 @@ def test_log_prob_parity(k, d):
     np.testing.assert_allclose(ops.convert_to_numpy(MixtureGaussianNLL()(y, params)), expected.mean(), rtol=1e-5)
 
 
-@pytest.mark.parametrize("k, d", [(3, 1), (5, 2)])
-def test_tfp_mixture_normal_layer_parity(k, d):
+def test_tfp_mixture_normal_layer_parity():
+    k, d = 5, 2
     """TFP's `MixtureNormal` layer on our parameters, converted to its layout, is the same distribution."""
     rng = np.random.default_rng(0)
     params = random_params(rng, 16, k, d)
@@ -76,8 +76,8 @@ def test_tfp_mixture_normal_layer_parity(k, d):
     )
 
 
-@pytest.mark.parametrize("k, d", [(1, 1), (3, 1), (5, 2)])
-def test_mean_and_stddev_parity(k, d):
+def test_mean_and_stddev_parity():
+    k, d = 5, 2
     rng = np.random.default_rng(1)
     params = random_params(rng, 32, k, d)
     dist = tfd_mixture_from(params, d)

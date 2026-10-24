@@ -1,6 +1,7 @@
 """Training tests for temperature scaling. Run once per backend via `KERAS_BACKEND`."""
 
 import numpy as np
+import pytest
 
 import keras
 from keras import ops
@@ -19,7 +20,8 @@ def make_data(n, seed):
     return x, y
 
 
-def train_overconfident_classifier():
+@pytest.fixture(scope="module")
+def overconfident_classifier():
     keras.utils.set_random_seed(0)
     x, y = make_data(300, seed=0)
     model = keras.Sequential(
@@ -38,8 +40,8 @@ def evaluate_calibration(model, x, y):
     return float(ops.convert_to_numpy(loss(y, logits))), float(ops.convert_to_numpy(ece.result()))
 
 
-def test_temperature_scaling_improves_held_out_calibration():
-    model = train_overconfident_classifier()
+def test_temperature_scaling_improves_held_out_calibration(overconfident_classifier):
+    model = overconfident_classifier
     x_val, y_val = make_data(2000, seed=1)
     x_test, y_test = make_data(4000, seed=2)
 
@@ -58,9 +60,9 @@ def test_temperature_scaling_improves_held_out_calibration():
     )
 
 
-def test_gradient_training_agrees_with_closed_form_fit():
+def test_gradient_training_agrees_with_closed_form_fit(overconfident_classifier):
     """Training only the temperature with `model.fit` reaches the closed-form optimum."""
-    model = train_overconfident_classifier()
+    model = overconfident_classifier
     model.trainable = False
     x_val, y_val = make_data(2000, seed=1)
     expected = fit_temperature(model.predict(x_val, verbose=0), y_val)
@@ -72,4 +74,5 @@ def test_gradient_training_agrees_with_closed_form_fit():
     )
     # The optimum is far from T = 1 (log T ~ 2.2), so give Adam enough full-batch steps.
     calibrated.fit(x_val, y_val, epochs=300, batch_size=2000, verbose=0)
+    model.trainable = True
     np.testing.assert_allclose(float(ops.convert_to_numpy(scaling.temperature)), expected, rtol=0.02)

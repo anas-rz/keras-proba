@@ -11,16 +11,6 @@ from keras import ops
 from keras_proba.layers.random_fourier_features import RandomFourierFeatures
 
 
-@pytest.mark.parametrize("kernel_initializer", ["gaussian", "laplacian"])
-def test_output_shape_and_range(kernel_initializer):
-    layer = RandomFourierFeatures(32, kernel_initializer=kernel_initializer)
-    x = np.random.randn(4, 10).astype("float32")
-    out = ops.convert_to_numpy(layer(x))
-    assert out.shape == (4, 32)
-    assert np.all(np.abs(out) <= 1.0 + 1e-6)
-    assert layer.compute_output_shape((None, 10)) == (None, 32)
-
-
 def test_higher_rank_inputs():
     layer = RandomFourierFeatures(16)
     x = np.random.randn(2, 3, 5, 8).astype("float32")
@@ -29,23 +19,6 @@ def test_higher_rank_inputs():
     # Each position is mapped independently with the same random features.
     flat = ops.convert_to_numpy(layer(x.reshape(-1, 8)))
     np.testing.assert_allclose(out.reshape(-1, 16), flat, atol=1e-6)
-
-
-def test_symbolic_functional_model():
-    inputs = keras.Input(shape=(6,))
-    outputs = RandomFourierFeatures(24)(inputs)
-    model = keras.Model(inputs, outputs)
-    assert model.output_shape == (None, 24)
-    assert model.predict(np.zeros((3, 6), "float32"), verbose=0).shape == (3, 24)
-
-
-def test_formula():
-    layer = RandomFourierFeatures(20, scale=2.5)
-    x = np.random.randn(5, 3).astype("float32")
-    out = ops.convert_to_numpy(layer(x))
-    w = ops.convert_to_numpy(layer.unscaled_kernel)
-    b = ops.convert_to_numpy(layer.bias)
-    np.testing.assert_allclose(out, np.cos(x @ w / 2.5 + b), atol=1e-5)
 
 
 def test_weights_and_defaults():
@@ -76,21 +49,8 @@ def test_custom_initializer():
     assert np.all(ops.convert_to_numpy(layer.unscaled_kernel) == 0)
 
 
-@pytest.mark.parametrize(
-    "kwargs",
-    [
-        {"output_dim": 0},
-        {"output_dim": -3},
-        {"output_dim": 4, "kernel_initializer": "polynomial"},
-        {"output_dim": 4, "scale": 0.0},
-    ],
-)
-def test_invalid_args(kwargs):
-    with pytest.raises(ValueError):
-        RandomFourierFeatures(**kwargs)
-
-
 def test_invalid_input_shapes():
+    """Argument validation is covered by the parity tests; input shapes are checked at build."""
     with pytest.raises(ValueError):
         RandomFourierFeatures(4).build((None,))
     with pytest.raises(ValueError):

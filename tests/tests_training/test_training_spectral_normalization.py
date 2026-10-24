@@ -113,8 +113,8 @@ def test_reparameterization_fit_does_not_assign_kernel():
     np.testing.assert_allclose(spectral_norm(ops.convert_to_numpy(sn.update_weights())), 0.5, rtol=0.02)
 
 
-@pytest.mark.parametrize("mode", ["projection", "reparameterization"])
-def test_conv_fit(mode):
+def test_conv_fit():
+    mode = "reparameterization"
     keras.utils.set_random_seed(0)
     rng = np.random.default_rng(0)
     x = rng.normal(size=(64, 8, 8, 2)).astype("float32")

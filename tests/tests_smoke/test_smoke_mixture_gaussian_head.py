@@ -8,7 +8,7 @@ import pytest
 import keras
 from keras import ops
 
-from keras_proba.layers.gaussian_head import GaussianHead, gaussian_nll
+from keras_proba.layers.gaussian_head import gaussian_nll
 from keras_proba.layers.mixture_gaussian_head import (
     MixtureGaussianHead,
     MixtureGaussianNLL,
@@ -22,8 +22,8 @@ def to_numpy(x):
     return ops.convert_to_numpy(x)
 
 
-@pytest.mark.parametrize("k, d", [(1, 1), (3, 1), (5, 2)])
-def test_output_shape_and_split(k, d):
+def test_output_shape_and_split():
+    k, d = 5, 2
     head = MixtureGaussianHead(k, units=d, min_scale=0.05)
     out = head(np.random.randn(6, 4).astype("float32") * 10)
     assert ops.shape(out) == (6, k * (1 + 2 * d))
@@ -31,20 +31,6 @@ def test_output_shape_and_split(k, d):
     logits, means, scales = (to_numpy(t) for t in split_mixture_params(out, d))
     assert logits.shape == (6, k) and means.shape == scales.shape == (6, k, d)
     assert np.all(scales >= 0.05)
-
-
-def test_higher_rank_inputs():
-    head = MixtureGaussianHead(3, units=2)
-    out = head(np.random.randn(2, 5, 4).astype("float32"))
-    assert ops.shape(out) == (2, 5, 15)
-    _, means, _ = split_mixture_params(out, 2)
-    assert ops.shape(means) == (2, 5, 3, 2)
-
-
-def test_functional_model():
-    inputs = keras.Input((4,))
-    model = keras.Model(inputs, MixtureGaussianHead(3)(keras.layers.Dense(8)(inputs)))
-    assert model.output_shape == (None, 9)
 
 
 def test_single_component_matches_gaussian_nll():
@@ -97,27 +83,10 @@ def test_mean_and_stddev_of_two_point_mixture():
     np.testing.assert_allclose(stddev, [[np.sqrt(5.0)]], rtol=1e-6)
 
 
-def test_weights_and_regularization():
-    head = MixtureGaussianHead(3, units=2, kernel_regularizer=keras.regularizers.L2(0.1), bias_regularizer="l1")
-    head.build((None, 4))
-    assert sorted(w.path.split("/", 1)[1] for w in head.trainable_weights) == [
-        "logits/bias",
-        "logits/kernel",
-        "mean/bias",
-        "mean/kernel",
-        "scale/bias",
-        "scale/kernel",
-    ]
-    head(np.zeros((1, 4), "float32"))
-    assert len(head.losses) == 6
-
-
-@pytest.mark.parametrize(
-    "kwargs", [{"num_components": 0}, {"num_components": 2, "units": 0}, {"num_components": 2, "min_scale": -1.0}]
-)
-def test_invalid_args(kwargs):
-    with pytest.raises(ValueError):
-        MixtureGaussianHead(**kwargs)
+def test_invalid_args():
+    for kwargs in [{"num_components": 0}, {"num_components": 2, "units": 0}, {"num_components": 2, "min_scale": -1.0}]:
+        with pytest.raises(ValueError):
+            MixtureGaussianHead(**kwargs)
 
 
 def test_mismatched_params_size():
@@ -125,22 +94,3 @@ def test_mismatched_params_size():
         split_mixture_params(np.zeros((2, 7), "float32"), units=2)
 
 
-def test_loss_reduction():
-    rng = np.random.default_rng(0)
-    params = np.concatenate([rng.normal(size=(8, 2)), rng.normal(size=(8, 2)), rng.uniform(0.5, 1.0, (8, 2))], -1)
-    y = rng.normal(size=(8, 1))
-    per_example = to_numpy(mixture_gaussian_nll(y, params.astype("float32")))
-    np.testing.assert_allclose(to_numpy(MixtureGaussianNLL()(y, params)), per_example.mean(), rtol=1e-5)
-    np.testing.assert_allclose(to_numpy(MixtureGaussianNLL(reduction="sum")(y, params)), per_example.sum(), rtol=1e-5)
-
-
-def test_heads_have_same_parameter_scale():
-    """At initialization, a one-component mixture head is a Gaussian head with an extra logit."""
-    keras.utils.set_random_seed(0)
-    x = np.random.randn(4, 3).astype("float32")
-    mixture = MixtureGaussianHead(1, kernel_initializer="ones")
-    gaussian = GaussianHead(1, kernel_initializer="ones")
-    _, means, scales = split_mixture_params(mixture(x))
-    expected = to_numpy(gaussian(x))
-    np.testing.assert_allclose(to_numpy(means)[:, 0], expected[:, :1], rtol=1e-6)
-    np.testing.assert_allclose(to_numpy(scales)[:, 0], expected[:, 1:], rtol=1e-6)

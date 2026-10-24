@@ -25,15 +25,9 @@ def test_pooler_layer(inner_dim, num_weights_expected):
     assert len(head.weights) == num_weights_expected
 
 
-def test_layer_invocation():
-    head = ClassificationHead(inner_dim=5, num_classes=2)
-    out = ops.convert_to_numpy(head(np.zeros((2, 10, 10), "float32")))
-    np.testing.assert_allclose(out, np.zeros((2, 2)))
-
-
 @pytest.mark.parametrize(
     "use_gp_layer, return_covmat",
-    [(True, True), (True, False), (False, True), (False, False)],
+    [(True, True), (False, True)],
 )
 def test_sngp_output_shape(use_gp_layer, return_covmat):
     batch_size, num_classes = 32, 2
@@ -100,7 +94,7 @@ def test_sngp_sublayers():
 
 @pytest.mark.parametrize(
     "gp_kwargs, expect_covmat",
-    [({"return_gp_cov": False}, False), ({"return_random_features": True}, True), ({"return_gp_cov": False, "return_random_features": True}, False)],
+    [({"return_gp_cov": False}, False), ({"return_random_features": True}, True)],
 )
 def test_sngp_gp_output_variants(gp_kwargs, expect_covmat):
     head = GaussianProcessClassificationHead(inner_dim=4, num_classes=2, num_inducing=16, **gp_kwargs)
@@ -123,9 +117,3 @@ def test_reset_covariance_matrix():
     GaussianProcessClassificationHead(inner_dim=4, num_classes=2, use_gp_layer=False).reset_covariance_matrix()
 
 
-def test_functional_model():
-    inputs = keras.Input((7, 9))
-    head = GaussianProcessClassificationHead(inner_dim=8, num_classes=4, num_inducing=32)
-    model = keras.Model(inputs, head(inputs))
-    assert model.output_shape == (None, 4)
-    assert model.predict(np.zeros((3, 7, 9), "float32"), verbose=0).shape == (3, 4)

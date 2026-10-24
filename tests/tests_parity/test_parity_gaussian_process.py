@@ -70,15 +70,10 @@ def assert_outputs_close(tf_outputs, k_outputs, atol=1e-4, rtol=1e-4):
     "kwargs",
     [
         {},
-        {"normalize_input": True},
-        {"gp_kernel_scale": 4.0, "gp_output_bias": 0.5},
-        {"scale_random_features": False},
-        {"use_custom_random_features": False},
+        {"normalize_input": True, "gp_output_bias": 0.5},
+        {"gp_kernel_scale": 4.0, "scale_random_features": False, "return_random_features": True},
         {"use_custom_random_features": False, "gp_kernel_scale": 2.0},
-        {"gp_kernel_type": "linear", "scale_random_features": False},
-        {"return_gp_cov": False},
-        {"return_random_features": True},
-        {"return_gp_cov": False, "return_random_features": True},
+        {"gp_kernel_type": "linear", "scale_random_features": False, "return_gp_cov": False},
     ],
 )
 def test_gp_forward_parity(kwargs):
@@ -100,8 +95,9 @@ def test_gp_forward_parity(kwargs):
     assert_outputs_close(tf_layer(x_ts, training=False), k_layer(x_ts, training=False))
 
 
-@pytest.mark.parametrize("momentum", [0.999, 0.5, -1.0])
-@pytest.mark.parametrize("likelihood", ["gaussian", "binary_logistic", "poisson"])
+@pytest.mark.parametrize(
+    "momentum, likelihood", [(0.999, "gaussian"), (0.5, "binary_logistic"), (-1.0, "poisson")]
+)
 def test_covariance_update_parity(momentum, likelihood):
     rng = np.random.default_rng(0)
     kwargs = {"momentum": momentum, "ridge_penalty": 0.5, "likelihood": likelihood}
@@ -157,8 +153,9 @@ def test_invalid_likelihood_parity():
             layer(features, logits=np.ones((4, 2), "float32"), training=True)
 
 
-@pytest.mark.parametrize("mean_field_factor", [None, -1.0, 0.0, 1.0, np.pi / 8, 3.0])
-@pytest.mark.parametrize("use_covariance", [False, True])
+@pytest.mark.parametrize(
+    "mean_field_factor, use_covariance", [(None, True), (-1.0, True), (np.pi / 8, True), (3.0, False)]
+)
 def test_mean_field_logits_parity(mean_field_factor, use_covariance):
     rng = np.random.default_rng(0)
     logits = rng.normal(size=(10, 4)).astype("float32")

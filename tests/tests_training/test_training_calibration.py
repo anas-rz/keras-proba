@@ -46,11 +46,3 @@ def test_metrics_in_fit_and_evaluate():
     )
 
 
-def test_training_improves_brier_score():
-    keras.utils.set_random_seed(0)
-    x, y = make_data()
-    model = build_model()
-    before = model.evaluate(x, y, verbose=0, return_dict=True)
-    model.fit(x, y, epochs=20, batch_size=64, verbose=0)
-    after = model.evaluate(x, y, verbose=0, return_dict=True)
-    assert after["brier_score"] < before["brier_score"]

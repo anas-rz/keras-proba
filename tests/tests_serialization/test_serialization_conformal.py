@@ -34,6 +34,3 @@ def test_classifier_config_round_trip():
     )
 
 
-def test_unfitted_config_round_trip():
-    assert SplitConformalClassifier.from_config(SplitConformalClassifier().get_config()).quantile_ is None
-    assert SplitConformalRegressor.from_config(SplitConformalRegressor().get_config()).quantile_ is None

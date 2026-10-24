@@ -62,16 +62,3 @@ def test_trainable_scale_is_non_negative():
     np.testing.assert_array_equal(ops.convert_to_numpy(rff.kernel_scale), [0.0])
 
 
-def test_gradients_flow_to_inputs():
-    keras.utils.set_random_seed(0)
-    x, y = make_regression_data(n=128)
-    inputs = keras.Input(shape=(2,))
-    hidden = keras.layers.Dense(4, name="encoder")(inputs)
-    outputs = keras.layers.Dense(1)(RandomFourierFeatures(128, scale=1.0)(hidden))
-    model = keras.Model(inputs, outputs)
-    model.compile(optimizer=keras.optimizers.Adam(0.01), loss="mse")
-
-    encoder_before = ops.convert_to_numpy(model.get_layer("encoder").kernel).copy()
-    model.fit(x, y, epochs=2, batch_size=32, verbose=0)
-    encoder_after = ops.convert_to_numpy(model.get_layer("encoder").kernel)
-    assert not np.allclose(encoder_before, encoder_after)

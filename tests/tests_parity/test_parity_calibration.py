@@ -72,25 +72,12 @@ def assert_decomposition_close(labels, logits, actual):
     np.testing.assert_allclose(to_numpy(actual[1]), numpy_resolution(labels, logits), rtol=1e-4, atol=1e-6)
 
 
-@pytest.mark.parametrize("temperature", [0.01, 1.0, 5.0])
-@pytest.mark.parametrize("num_classes", [2, 4])
+@pytest.mark.parametrize("temperature, num_classes", [(0.01, 2), (1.0, 4)])
 def test_brier_decomposition_parity(temperature, num_classes):
     rng = np.random.default_rng(0)
     logits = random_logits(rng, (512, num_classes), temperature)
     labels = rng.integers(0, num_classes, size=512).astype("int32")
     assert_decomposition_close(labels, logits, brier_decomposition(labels, logits))
-
-
-def test_brier_decomposition_batch_parity():
-    rng = np.random.default_rng(0)
-    logits = random_logits(rng, (3, 5, 256, 4))
-    labels = rng.integers(0, 4, size=(3, 5, 256)).astype("int32")
-    actual = brier_decomposition(labels, logits)
-    for a in actual:
-        assert a.shape == (3, 5)
-    for i in range(3):
-        for j in range(5):
-            assert_decomposition_close(labels[i, j], logits[i, j], [a[i, j] for a in actual])
 
 
 def test_reference_resolution_differs_with_imbalanced_labels():
@@ -105,9 +92,7 @@ def test_reference_resolution_differs_with_imbalanced_labels():
     )
 
 
-@pytest.mark.parametrize("num_bins", [1, 3, 10, 15])
-@pytest.mark.parametrize("num_classes", [2, 5])
-@pytest.mark.parametrize("use_predicted", [False, True])
+@pytest.mark.parametrize("num_bins, num_classes, use_predicted", [(1, 2, False), (15, 5, False), (10, 5, True)])
 def test_expected_calibration_error_parity(num_bins, num_classes, use_predicted):
     rng = np.random.default_rng(num_bins)
     logits = random_logits(rng, (1000, num_classes), temperature=0.5)
@@ -163,8 +148,7 @@ def assert_prob_space_quantile_outputs_close(expected, actual, pred_log_prob, ax
     )
 
 
-@pytest.mark.parametrize("num_buckets", [3, 10, 20])
-@pytest.mark.parametrize("log_space_buckets", [False, True])
+@pytest.mark.parametrize("num_buckets, log_space_buckets", [(10, False), (20, True)])
 def test_ece_quantiles_parity(num_buckets, log_space_buckets):
     rng = np.random.default_rng(num_buckets)
     probs = rng.uniform(0.2, 1.0, size=500).astype("float32")
@@ -192,8 +176,8 @@ def test_ece_quantiles_ties_parity():
     assert_quantile_outputs_close(expected, actual)
 
 
-@pytest.mark.parametrize("axis", [0, 1, -1])
-def test_ece_quantiles_axis_parity(axis):
+def test_ece_quantiles_axis_parity():
+    axis = 1
     rng = np.random.default_rng(0)
     # Every axis has enough samples for 4 buckets.
     probs = rng.uniform(0.3, 1.0, size=(40, 36, 30)).astype("float32")

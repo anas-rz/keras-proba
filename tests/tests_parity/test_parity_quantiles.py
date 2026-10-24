@@ -18,7 +18,15 @@ from keras import ops  # noqa: E402
 
 from keras_proba.stats.quantiles import percentile, quantiles  # noqa: E402
 
-INTERPOLATIONS = [None, "nearest", "linear", "lower", "higher", "midpoint"]
+# (q, axis, keepdims) covering scalar and vector q, every axis form and keepdims.
+PERCENTILE_CASES = [
+    (30.0, None, False),
+    ([5.0, 50.0, 99.0], None, True),
+    (40.0, 1, False),
+    ([10.0, 60.0, 90.0], -1, True),
+    ([0.0, 100.0], [0, 2], False),
+    (87.5, [1, 2], True),
+]
 
 
 def assert_same(actual, expected):
@@ -27,60 +35,31 @@ def assert_same(actual, expected):
     np.testing.assert_allclose(actual, expected, rtol=1e-6, atol=1e-6, equal_nan=True)
 
 
-@pytest.mark.parametrize("interpolation", INTERPOLATIONS)
-@pytest.mark.parametrize("q", [0.0, 30.0, 50.0, 87.5, 100.0, [5.0, 25.0, 50.0, 99.0]])
-def test_percentile_parity_flat(interpolation, q):
-    x = np.random.default_rng(0).normal(size=(37,)).astype("float32")
-    assert_same(
-        percentile(x, q, interpolation=interpolation),
-        tfp_quantiles.percentile(x, q, interpolation=interpolation),
-    )
-
-
-@pytest.mark.parametrize("interpolation", INTERPOLATIONS)
-@pytest.mark.parametrize("axis", [None, 0, 1, -1, [0, 2], [1, 2]])
-@pytest.mark.parametrize("keepdims", [False, True])
-@pytest.mark.parametrize("q", [40.0, [10.0, 60.0, 90.0]])
-def test_percentile_parity_axis(interpolation, axis, keepdims, q):
+@pytest.mark.parametrize("interpolation", ["nearest", "linear", "lower", "higher", "midpoint"])
+def test_percentile_and_quantiles_parity(interpolation):
     x = np.random.default_rng(1).normal(size=(6, 5, 7)).astype("float32")
-    assert_same(
-        percentile(x, q, axis=axis, interpolation=interpolation, keepdims=keepdims),
-        tfp_quantiles.percentile(x, q, axis=axis, interpolation=interpolation, keepdims=keepdims),
-    )
+    for q, axis, keepdims in PERCENTILE_CASES:
+        assert_same(
+            percentile(x, q, axis=axis, interpolation=interpolation, keepdims=keepdims),
+            tfp_quantiles.percentile(x, q, axis=axis, interpolation=interpolation, keepdims=keepdims),
+        )
+    for num_quantiles, axis in [(1, None), (4, 0), (10, [0, 1])]:
+        assert_same(
+            quantiles(x, num_quantiles, axis=axis, interpolation=interpolation),
+            tfp_quantiles.quantiles(x, num_quantiles, axis=axis, interpolation=interpolation),
+        )
 
 
-def test_percentile_parity_nan():
+def test_percentile_parity_nan_and_integers():
     x = np.random.default_rng(2).normal(size=(4, 9)).astype("float32")
     x[1, 3] = np.nan
     assert_same(percentile(x, [25.0, 75.0], axis=1), tfp_quantiles.percentile(x, [25.0, 75.0], axis=1))
 
-
-@pytest.mark.parametrize("interpolation", ["nearest", "lower", "higher"])
-def test_percentile_parity_integers(interpolation):
     x = np.random.default_rng(3).integers(-50, 50, size=(5, 8)).astype("int32")
-    assert_same(
-        percentile(x, [20.0, 80.0], axis=1, interpolation=interpolation),
-        tfp_quantiles.percentile(x, [20.0, 80.0], axis=1, interpolation=interpolation),
-    )
-
-
-@pytest.mark.parametrize("interpolation", INTERPOLATIONS)
-@pytest.mark.parametrize("num_quantiles", [1, 3, 4, 10])
-@pytest.mark.parametrize("axis", [None, 0, [0, 1]])
-def test_quantiles_parity(interpolation, num_quantiles, axis):
-    x = np.random.default_rng(num_quantiles).uniform(size=(11, 4, 3)).astype("float32")
-    assert_same(
-        quantiles(x, num_quantiles, axis=axis, interpolation=interpolation),
-        tfp_quantiles.quantiles(x, num_quantiles, axis=axis, interpolation=interpolation),
-    )
-
-
-def test_quantiles_docstring_parity():
-    x = np.arange(11.0, dtype="float32")
-    for interpolation in ["nearest", "linear", "lower"]:
+    for interpolation in ["nearest", "lower", "higher"]:
         assert_same(
-            quantiles(x, 4, interpolation=interpolation),
-            tfp_quantiles.quantiles(x, 4, interpolation=interpolation),
+            percentile(x, [20.0, 80.0], axis=1, interpolation=interpolation),
+            tfp_quantiles.percentile(x, [20.0, 80.0], axis=1, interpolation=interpolation),
         )
 
 

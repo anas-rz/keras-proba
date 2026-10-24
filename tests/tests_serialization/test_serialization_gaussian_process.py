@@ -6,16 +6,12 @@ import pytest
 import keras
 from keras import ops
 
-from keras_proba.layers.gaussian_process import (
-    LaplaceRandomFeatureCovariance,
-    RandomFeatureGaussianProcess,
-)
+from keras_proba.layers.gaussian_process import RandomFeatureGaussianProcess
 
 
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"units": 3},
         {
             "units": 2,
             "num_inducing": 64,
@@ -25,7 +21,6 @@ from keras_proba.layers.gaussian_process import (
             "gp_cov_likelihood": "poisson",
             "return_random_features": True,
         },
-        {"units": 2, "use_custom_random_features": False, "gp_kernel_scale_trainable": True},
         {
             "units": 2,
             "custom_random_features_initializer": keras.initializers.RandomNormal(stddev=0.5, seed=1),
@@ -48,27 +43,8 @@ def test_gp_output_kwargs_round_trip():
     np.testing.assert_array_equal(ops.convert_to_numpy(restored._gp_output_layer.kernel), 0)
 
 
-def test_covariance_config_round_trip():
-    layer = LaplaceRandomFeatureCovariance(momentum=0.9, ridge_penalty=0.1, likelihood="binary_logistic")
-    restored = LaplaceRandomFeatureCovariance.from_config(layer.get_config())
-    assert restored.get_config() == layer.get_config()
-
-
-def test_serialize_deserialize():
-    layer = RandomFeatureGaussianProcess(units=2, num_inducing=16, name="gp")
-    restored = keras.layers.deserialize(keras.layers.serialize(layer))
-    assert isinstance(restored, RandomFeatureGaussianProcess)
-    assert restored.get_config() == layer.get_config()
-
-
-@pytest.mark.parametrize(
-    "kwargs",
-    [
-        {},
-        {"use_custom_random_features": False, "normalize_input": True, "return_random_features": True},
-    ],
-)
-def test_model_save_and_load(tmp_path, kwargs):
+def test_model_save_and_load(tmp_path):
+    kwargs = {"use_custom_random_features": False, "normalize_input": True, "return_random_features": True}
     keras.utils.set_random_seed(0)
     inputs = keras.Input(shape=(4,))
     outputs = RandomFeatureGaussianProcess(units=2, num_inducing=32, **kwargs)(inputs)

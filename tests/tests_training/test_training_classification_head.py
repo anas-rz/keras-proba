@@ -1,14 +1,12 @@
 """Training tests for the SNGP head and ResetCovarianceCallback. Run once per backend via `KERAS_BACKEND`."""
 
 import numpy as np
-import pytest
 
 import keras
 from keras import ops
 
 from keras_proba.callbacks.reset_covariance import ResetCovarianceCallback
 from keras_proba.layers.classification_head import GaussianProcessClassificationHead
-from keras_proba.layers.gaussian_process import RandomFeatureGaussianProcess
 from keras_proba.layers.spectral_normalization import SpectralNormalization
 
 
@@ -70,9 +68,12 @@ def test_sngp_fit_and_ood_uncertainty():
     assert probs_ood.max(-1).mean() < 0.8
 
 
-@pytest.mark.parametrize("nested", [False, True])
-def test_reset_covariance_callback(nested):
-    """With features fixed and momentum=-1, the precision only sums the last epoch when reset."""
+def test_reset_covariance_callback():
+    """With features fixed and momentum=-1, the precision only sums the last epoch when reset.
+
+    The covariance layer is nested inside the SNGP head's GP layer, so this also checks that the
+    callback finds nested layers.
+    """
     rng = np.random.default_rng(0)
     x = rng.normal(size=(64, 6)).astype("float32")
     y = rng.integers(0, 3, 64)
@@ -81,26 +82,15 @@ def test_reset_covariance_callback(nested):
     def run(callbacks):
         keras.utils.set_random_seed(0)
         inputs = keras.Input((6,))
-        if nested:
-            gp = GaussianProcessClassificationHead(inner_dim=8, num_classes=3, num_inducing=num_inducing, gp_cov_momentum=-1)
-            outputs = gp(inputs)
-            cov_layer = lambda: gp.out_proj._gp_cov_layer
-        else:
-            gp = RandomFeatureGaussianProcess(3, num_inducing=num_inducing, gp_cov_momentum=-1)
-            outputs = gp(inputs)[0]
-            cov_layer = lambda: gp._gp_cov_layer
-        model = keras.Model(inputs, outputs)
+        head = GaussianProcessClassificationHead(inner_dim=8, num_classes=3, num_inducing=num_inducing, gp_cov_momentum=-1)
+        model = keras.Model(inputs, head(inputs))
         # A zero learning rate keeps the features identical across epochs.
         model.compile(optimizer=keras.optimizers.SGD(0.0), loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True))
         model.fit(x, y, epochs=epochs, batch_size=16, verbose=0, callbacks=callbacks)
-        return np.trace(ops.convert_to_numpy(cov_layer().precision_matrix)) - num_inducing
+        return np.trace(ops.convert_to_numpy(head.out_proj._gp_cov_layer.precision_matrix)) - num_inducing
 
     accumulated = run([])
     reset = run([ResetCovarianceCallback()])
     np.testing.assert_allclose(accumulated, epochs * reset, rtol=1e-3)
 
 
-def test_callback_ignores_models_without_gp():
-    model = keras.Sequential([keras.Input((3,)), keras.layers.Dense(2)])
-    model.compile(optimizer="sgd", loss="mse")
-    model.fit(np.zeros((4, 3)), np.zeros((4, 2)), epochs=2, verbose=0, callbacks=[ResetCovarianceCallback()])

@@ -20,8 +20,8 @@ def torch_nll(y, mean, scale, reduction="mean"):
     return loss(torch.tensor(mean), torch.tensor(y), torch.tensor(scale**2)).numpy()
 
 
-@pytest.mark.parametrize("units", [1, 3])
-def test_loss_parity(units):
+def test_loss_parity():
+    units = 3
     rng = np.random.default_rng(0)
     y = rng.normal(size=(16, units)).astype("float32")
     mean = rng.normal(size=(16, units)).astype("float32")

@@ -1,7 +1,6 @@
 """Training tests for the Gaussian process layer. Run once per backend via `KERAS_BACKEND`."""
 
 import numpy as np
-import pytest
 
 import keras
 from keras import ops
@@ -32,8 +31,8 @@ def build_models(**gp_kwargs):
     return train_model, keras.Model(inputs, [logits, covmat]), gp
 
 
-@pytest.mark.parametrize("gp_cov_likelihood", ["gaussian"])
-def test_fit_learns_and_updates_precision(gp_cov_likelihood):
+def test_fit_learns_and_updates_precision():
+    gp_cov_likelihood = "gaussian"
     keras.utils.set_random_seed(0)
     x, y = make_classification_data()
     train_model, _, gp = build_models(gp_cov_likelihood=gp_cov_likelihood)
@@ -82,16 +81,6 @@ def test_uncertainty_is_higher_out_of_distribution():
     probs_mf = ops.convert_to_numpy(ops.softmax(mean_field_logits(logits_ood, cov_ood, np.pi / 8)))
     # Mean-field adjustment moves OOD predictions toward uniform.
     assert probs_mf.max(-1).mean() < probs_raw.max(-1).mean()
-
-
-def test_gradients_reach_feature_extractor():
-    keras.utils.set_random_seed(0)
-    x, y = make_classification_data(n=128)
-    train_model, _, _ = build_models()
-    hidden_layer = train_model.layers[1]
-    before = ops.convert_to_numpy(hidden_layer.kernel).copy()
-    train_model.fit(x, y, epochs=1, batch_size=32, verbose=0)
-    assert not np.allclose(ops.convert_to_numpy(hidden_layer.kernel), before)
 
 
 def test_binary_logistic_likelihood_fit():

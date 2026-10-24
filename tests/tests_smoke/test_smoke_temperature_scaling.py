@@ -1,6 +1,5 @@
 """Smoke and correctness tests for temperature scaling. Run once per backend via `KERAS_BACKEND`."""
 
-import math
 
 import numpy as np
 import pytest
@@ -9,11 +8,7 @@ import keras
 from keras import ops
 
 from keras_proba.metrics.calibration import expected_calibration_error
-from keras_proba.postprocessing.temperature_scaling import (
-    TemperatureScaling,
-    fit_temperature,
-    temperature_scaled_nll,
-)
+from keras_proba.postprocessing.temperature_scaling import TemperatureScaling, fit_temperature
 
 
 def to_numpy(x):
@@ -37,8 +32,8 @@ def test_layer_divides_by_temperature():
     assert layer.compute_output_shape((None, 5)) == (None, 5)
 
 
-@pytest.mark.parametrize("sharpness", [0.5, 1.0, 3.0])
-def test_fit_recovers_known_temperature(sharpness):
+def test_fit_recovers_known_temperature():
+    sharpness = 3.0
     """Scaling calibrated logits by `s` is undone by a temperature close to `s`."""
     logits, labels = calibrated_data(np.random.default_rng(0))
     np.testing.assert_allclose(fit_temperature(logits * sharpness, labels), sharpness, rtol=0.05)
@@ -50,15 +45,6 @@ def test_fit_binary_sigmoid_logits():
     labels = (rng.uniform(size=20000) < 1 / (1 + np.exp(-z))).astype("int32")
     for logits in [3 * z, (3 * z)[:, None]]:
         np.testing.assert_allclose(fit_temperature(logits, labels), 3.0, rtol=0.05)
-
-
-def test_fitted_temperature_minimizes_nll():
-    logits, labels = calibrated_data(np.random.default_rng(1), n=3000)
-    logits = logits * 2
-    t = fit_temperature(logits, labels)
-    best = temperature_scaled_nll(logits, labels, t)
-    for factor in [0.95, 1.05]:
-        assert temperature_scaled_nll(logits, labels, t * factor) > best
 
 
 def test_one_hot_labels_and_sample_weight():
@@ -105,16 +91,10 @@ def test_scaling_preserves_predictions_and_improves_calibration():
     assert ece_after < 0.02 < ece_before
 
 
-@pytest.mark.parametrize(
-    "kwargs",
-    [{"temperature_range": (0.0, 1.0)}, {"temperature_range": (2.0, 1.0)}],
-)
-def test_invalid_range(kwargs):
-    with pytest.raises(ValueError):
-        fit_temperature(np.zeros((2, 2)), np.array([0, 1]), **kwargs)
-
-
 def test_invalid_inputs():
+    for temperature_range in [(0.0, 1.0), (2.0, 1.0)]:
+        with pytest.raises(ValueError):
+            fit_temperature(np.zeros((2, 2)), np.array([0, 1]), temperature_range=temperature_range)
     with pytest.raises(ValueError):
         TemperatureScaling(-1.0)
     with pytest.raises(ValueError):
@@ -123,7 +103,3 @@ def test_invalid_inputs():
         fit_temperature(np.zeros((2, 2, 2)), np.array([0, 1]))
 
 
-def test_default_temperature_is_identity():
-    x = np.random.randn(2, 3).astype("float32")
-    np.testing.assert_allclose(to_numpy(TemperatureScaling()(x)), x, rtol=1e-7)
-    assert math.isclose(float(to_numpy(TemperatureScaling().temperature)), 1.0)

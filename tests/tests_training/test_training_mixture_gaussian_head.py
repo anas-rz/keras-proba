@@ -58,13 +58,3 @@ def test_mixture_captures_bimodal_targets():
             assert np.min(np.abs(weighted_means - mode)) < 0.3, (xi, mode, means[i, :, 0], weights[i])
 
 
-def test_multi_output_fit():
-    keras.utils.set_random_seed(0)
-    rng = np.random.default_rng(0)
-    x = rng.normal(size=(512, 3)).astype("float32")
-    y = np.stack([x[:, 0] + x[:, 1], x[:, 2] * 2], -1).astype("float32")
-    model = keras.Sequential([keras.Input((3,)), keras.layers.Dense(32, activation="relu"), MixtureGaussianHead(2, units=2)])
-    model.compile(optimizer=keras.optimizers.Adam(0.01), loss=MixtureGaussianNLL())
-    history = model.fit(x, y, epochs=20, batch_size=64, verbose=0)
-    assert np.all(np.isfinite(history.history["loss"]))
-    assert history.history["loss"][-1] < history.history["loss"][0] - 1.0

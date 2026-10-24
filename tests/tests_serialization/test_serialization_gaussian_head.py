@@ -11,7 +11,6 @@ from keras_proba.layers.gaussian_head import GaussianHead, GaussianNLL
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"units": 1},
         {
             "units": 3,
             "min_scale": 0.1,

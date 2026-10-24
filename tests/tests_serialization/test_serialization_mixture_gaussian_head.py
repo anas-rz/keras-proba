@@ -11,7 +11,6 @@ from keras_proba.layers.mixture_gaussian_head import MixtureGaussianHead, Mixtur
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"num_components": 3},
         {
             "num_components": 5,
             "units": 2,

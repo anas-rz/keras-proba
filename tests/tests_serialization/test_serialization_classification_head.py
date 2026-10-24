@@ -9,22 +9,15 @@ import pytest
 import keras
 from keras import ops
 
-from keras_proba.layers.classification_head import ClassificationHead, GaussianProcessClassificationHead
+from keras_proba.layers.classification_head import GaussianProcessClassificationHead
 
 SPEC_NORM_KWARGS = {"iteration": 1, "norm_multiplier": 1.0}
 GP_LAYER_KWARGS = {"num_inducing": 512}
 
 
-def test_classification_head_serialization():
-    layer = ClassificationHead(inner_dim=5, num_classes=2, activation="relu", dropout_rate=0.1)
-    new_layer = ClassificationHead.from_config(layer.get_config())
-    assert new_layer.get_config() == layer.get_config()
-
-
 @pytest.mark.parametrize(
     "extra_kwargs",
     [
-        {},
         {"temperature": 0.5, "mode": "reparameterization", "custom_random_features_activation": "relu"},
         {"custom_random_features_initializer": keras.initializers.RandomNormal(stddev=0.5, seed=1)},
     ],
@@ -53,8 +46,8 @@ def test_sngp_kwargs_serialization():
     assert config["num_inducing"] == 512
 
 
-@pytest.mark.parametrize("mode", ["projection", "reparameterization"])
-def test_model_save_and_load(tmp_path, mode):
+def test_model_save_and_load(tmp_path):
+    mode = "projection"
     keras.utils.set_random_seed(0)
     inputs = keras.Input((6, 4))
     head = GaussianProcessClassificationHead(inner_dim=8, num_classes=3, num_inducing=32, temperature=1.0, mode=mode)

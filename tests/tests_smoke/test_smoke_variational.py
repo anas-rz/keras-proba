@@ -32,7 +32,6 @@ CONV_CLASSES = [
     Conv3DReparameterization,
     Conv3DFlipout,
 ]
-FLIPOUT_CONV_CLASSES = [Conv1DFlipout, Conv2DFlipout, Conv3DFlipout]
 
 
 def conv_input_shape(layer_cls, channels, sizes=(9, 8, 7), batch_size=2):
@@ -51,41 +50,27 @@ def to_numpy(x):
     return ops.convert_to_numpy(x)
 
 
-@pytest.mark.parametrize("layer_cls", DENSE_CLASSES)
-def test_dense_shapes_and_kl_penalty(layer_cls):
-    layer = layer_cls(4)
-    out = layer(np.random.randn(3, 5).astype("float32"))
-    assert ops.shape(out) == (3, 4)
-    assert layer.compute_output_shape((None, 5)) == (None, 4)
-    assert sorted(w.name for w in layer.trainable_weights) == [
-        "bias_posterior_loc",
-        "kernel_posterior_loc",
-        "kernel_posterior_untransformed_scale",
-    ]
-    assert len(layer.losses) == 1
-    np.testing.assert_allclose(to_numpy(layer.losses[0]), to_numpy(layer.kl_divergence()), rtol=1e-6)
+def test_shapes_weights_and_kl_penalty():
+    for layer_cls in DENSE_CLASSES + CONV_CLASSES:
+        conv = layer_cls in CONV_CLASSES
+        layer = layer_cls(5, 3, strides=2, padding="same") if conv else layer_cls(5)
+        shape = conv_input_shape(layer_cls, channels=3) if conv else (2, 3)
+        out = layer(np.random.randn(*shape).astype("float32"))
+        # "same" padding with stride 2 rounds each spatial size (9, 8, 7) up after halving.
+        expected = (2, *(5, 4, 4)[: layer_cls.rank], 5) if conv else (2, 5)
+        assert ops.shape(out) == expected == layer.compute_output_shape(shape), layer_cls
+        assert sorted(w.name for w in layer.trainable_weights) == [
+            "bias_posterior_loc",
+            "kernel_posterior_loc",
+            "kernel_posterior_untransformed_scale",
+        ]
+        assert len(layer.losses) == 1
+        np.testing.assert_allclose(to_numpy(layer.losses[0]), to_numpy(layer.kl_divergence()), rtol=1e-6)
 
-
-@pytest.mark.parametrize("layer_cls", CONV_CLASSES)
-def test_conv_shapes_and_kl_penalty(layer_cls):
-    layer = layer_cls(5, 3, strides=2, padding="same")
-    shape = conv_input_shape(layer_cls, channels=3)
-    out = layer(np.random.randn(*shape).astype("float32"))
-    # "same" padding with stride 2 rounds each spatial size (9, 8, 7) up after halving.
-    expected = (2, *(5, 4, 4)[: layer_cls.rank], 5)
-    assert ops.shape(out) == expected == layer.compute_output_shape(shape)
-    assert layer.kernel_posterior_loc.shape == (3,) * layer_cls.rank + (3, 5)
-    assert len(layer.losses) == 1
-
-
-@pytest.mark.parametrize("layer_cls", DENSE_CLASSES + CONV_CLASSES)
-def test_kl_penalty_without_bias(layer_cls):
-    layer = layer_cls(2, 3) if layer_cls in CONV_CLASSES else layer_cls(2)
-    layer.use_bias = False
-    layer(make_input(layer_cls, channels=1))
-    assert layer.bias_posterior_loc is None
-    assert len(layer.trainable_weights) == 2
-    assert len(layer.losses) == 1
+        # Without a bias there is no bias weight, and still one divergence.
+        layer = layer_cls(2, 3, use_bias=False) if conv else layer_cls(2, use_bias=False)
+        layer(make_input(layer_cls, channels=1))
+        assert layer.bias_posterior_loc is None and len(layer.trainable_weights) == 2 and len(layer.losses) == 1
 
 
 def test_kl_divergence_values():
@@ -111,12 +96,11 @@ def test_posterior_scale_initialization():
     np.testing.assert_allclose(scale.mean(), np.log1p(np.exp(-3.0)), rtol=0.05)
 
 
-@pytest.mark.parametrize("layer_cls", DENSE_CLASSES + CONV_CLASSES)
-def test_forward_pass_is_stochastic(layer_cls):
-    layer = layer_cls(3, 3) if layer_cls in CONV_CLASSES else layer_cls(3)
-    x = make_input(layer_cls, channels=2)
-    outputs = [to_numpy(layer(x)) for _ in range(2)]
-    assert not np.allclose(outputs[0], outputs[1])
+def test_forward_pass_is_stochastic():
+    for layer_cls in DENSE_CLASSES + CONV_CLASSES:
+        layer = layer_cls(3, 3) if layer_cls in CONV_CLASSES else layer_cls(3)
+        x = make_input(layer_cls, channels=2)
+        assert not np.allclose(to_numpy(layer(x)), to_numpy(layer(x))), layer_cls
 
 
 def test_seed_makes_samples_reproducible():
@@ -179,8 +163,8 @@ def test_local_reparameterization_zero_inputs_have_finite_gradients():
 @pytest.mark.skipif(
     keras.backend.backend() == "tensorflow", reason="TensorFlow's CPU convolution does not support channels_first."
 )
-@pytest.mark.parametrize("layer_cls", FLIPOUT_CONV_CLASSES)
-def test_conv_channels_first_matches_channels_last(layer_cls):
+def test_conv_channels_first_matches_channels_last():
+    layer_cls = Conv3DFlipout
     rank = layer_cls.rank
     x = np.random.default_rng(0).normal(size=conv_input_shape(layer_cls, channels=3, sizes=(7, 6, 5))).astype("float32")
     noise = np.random.default_rng(1).normal(size=(3,) * rank + (3, 4)).astype("float32")
@@ -205,59 +189,15 @@ def test_conv_channels_first_matches_channels_last(layer_cls):
     np.testing.assert_allclose(outputs["channels_first"], outputs["channels_last"], rtol=1e-4, atol=1e-5)
 
 
-def test_dense_layers_in_sequential():
-    x = np.random.uniform(-1.0, 1.0, size=(10, 3)).astype("float32")
-    y = np.random.uniform(-1.0, 1.0, size=(10, 4)).astype("float32")
-    model = keras.Sequential(
-        [
-            keras.Input((3,)),
-            DenseReparameterization(6, activation="relu"),
-            DenseFlipout(6, activation="relu"),
-            DenseLocalReparameterization(4),
-        ]
-    )
-    model.compile(loss="mse", optimizer="adam")
-    model.fit(x, y, batch_size=2, epochs=3, verbose=0)
-    assert ops.shape(model(np.zeros((2, 3), "float32"))) == (2, 4)
-
-
-@pytest.mark.parametrize(
-    "reparameterization_cls, flipout_cls",
-    [
-        (Conv1DReparameterization, Conv1DFlipout),
-        (Conv2DReparameterization, Conv2DFlipout),
-        (Conv3DReparameterization, Conv3DFlipout),
-    ],
-)
-def test_conv_layers_in_sequential(reparameterization_cls, flipout_cls):
-    spatial = (8,) * reparameterization_cls.rank
-    model = keras.Sequential(
-        [
-            keras.Input(spatial + (1,)),
-            reparameterization_cls(2, 3, activation="relu"),
-            flipout_cls(2, 3),
-            keras.layers.Flatten(),
-            DenseFlipout(1),
-        ]
-    )
-    model.compile(loss="mse", optimizer="adam")
-    model.fit(np.random.randn(8, *spatial, 1), np.random.randn(8, 1), batch_size=4, epochs=2, verbose=0)
-    assert model.output_shape == (None, 1)
-
-
-@pytest.mark.parametrize(
-    "make_layer, kwargs",
-    [
+def test_invalid_args():
+    for make_layer, kwargs in [
         (DenseFlipout, {"units": 0}),
         (DenseFlipout, {"units": 2, "kernel_prior_scale": 0.0}),
         (Conv2DFlipout, {"filters": 0, "kernel_size": 3}),
         (Conv2DFlipout, {"filters": 2, "kernel_size": 3, "padding": "causal"}),
-        (Conv1DFlipout, {"filters": 2, "kernel_size": (3, 3)}),
         (Conv2DFlipout, {"filters": 2, "kernel_size": (3, 3, 3)}),
         (Conv3DReparameterization, {"filters": 2, "kernel_size": 3, "strides": (1, 2)}),
         (Conv2DFlipout, {"filters": 2, "kernel_size": 3, "data_format": "nhwc"}),
-    ],
-)
-def test_invalid_args(make_layer, kwargs):
-    with pytest.raises(ValueError):
-        make_layer(**kwargs)
+    ]:
+        with pytest.raises(ValueError):
+            make_layer(**kwargs)

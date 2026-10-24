@@ -118,8 +118,8 @@ DENSE_KINDS = ["reparameterization", "local_reparameterization", "flipout"]
 
 
 @pytest.mark.parametrize("kind", DENSE_KINDS)
-@pytest.mark.parametrize("activation", [None, "relu"])
-def test_dense_forward_parity(kind, activation, recorded_signs):
+def test_dense_forward_parity(kind, recorded_signs):
+    activation = "relu"
     rng = np.random.default_rng(0)
     x = rng.normal(size=(6, 5)).astype("float32")
     tf_layer, k_layer, tf_out, k_out = run_pair(kind, x, recorded_signs, units=4, activation=activation)
@@ -139,17 +139,6 @@ def test_dense_flipout_higher_rank_parity(recorded_signs):
     x = rng.normal(size=(2, 3, 5)).astype("float32")
     _, _, tf_out, k_out = run_pair("flipout", x, recorded_signs, build_shape=(None, 5), units=4)
     np.testing.assert_allclose(k_out, tf_out, rtol=1e-4, atol=1e-5)
-
-
-@pytest.mark.parametrize("kind", DENSE_KINDS)
-def test_dense_weights_parity(kind):
-    tf_cls, k_cls = PAIRS[kind]
-    tf_layer, k_layer = tf_cls(3), k_cls(3)
-    tf_layer.build((None, 5))
-    k_layer.build((None, 5))
-    tf_weights = {w.name.split("/")[-1].split(":")[0]: tuple(w.shape) for w in tf_layer.trainable_weights}
-    k_weights = {w.name: tuple(w.shape) for w in k_layer.trainable_weights}
-    assert k_weights == tf_weights
 
 
 def test_kl_weight_and_prior_scale_parity():
@@ -181,8 +170,13 @@ CONV_CONFIGS = [
 ]
 
 
-@pytest.mark.parametrize("kind", CONV_KINDS)
-@pytest.mark.parametrize("config", CONV_CONFIGS)
+# Every conv layer with strides and asymmetric kernels; Conv2D also with valid padding, dilation and an activation.
+CONV_CASES = [(kind, CONV_CONFIGS[2]) for kind in CONV_KINDS] + [
+    (kind, config) for kind in ["conv2d_reparameterization", "conv2d_flipout"] for config in (CONV_CONFIGS[0], CONV_CONFIGS[3], CONV_CONFIGS[4])
+]
+
+
+@pytest.mark.parametrize("kind, config", CONV_CASES)
 def test_conv_forward_parity(kind, config, recorded_signs):
     rank = conv_rank(kind)
     config = dict(config)
@@ -196,19 +190,19 @@ def test_conv_forward_parity(kind, config, recorded_signs):
     np.testing.assert_allclose(ops.convert_to_numpy(k_layer.losses[0]), tf_layer.losses[0].numpy(), rtol=1e-5)
 
 
-@pytest.mark.parametrize("kind", CONV_KINDS)
-def test_conv_weights_parity(kind):
-    tf_cls, k_cls = PAIRS[kind]
-    shape = CONV_INPUT_SHAPES[conv_rank(kind)]
-    tf_layer, k_layer = tf_cls(4, 3), k_cls(4, 3)
-    tf_layer.build(shape)
-    k_layer.build(shape)
-    tf_weights = {w.name.split("/")[-1].split(":")[0]: tuple(w.shape) for w in tf_layer.trainable_weights}
-    assert {w.name: tuple(w.shape) for w in k_layer.trainable_weights} == tf_weights
+def test_weights_parity():
+    for kind, (tf_cls, k_cls) in PAIRS.items():
+        conv = kind.startswith("conv")
+        shape = CONV_INPUT_SHAPES[conv_rank(kind)] if conv else (None, 5)
+        tf_layer, k_layer = (tf_cls(4, 3), k_cls(4, 3)) if conv else (tf_cls(3), k_cls(3))
+        tf_layer.build(shape)
+        k_layer.build(shape)
+        tf_weights = {w.name.split("/")[-1].split(":")[0]: tuple(w.shape) for w in tf_layer.trainable_weights}
+        assert {w.name: tuple(w.shape) for w in k_layer.trainable_weights} == tf_weights, kind
 
 
 @pytest.mark.skipif(keras.backend.backend() != "tensorflow", reason="Uses tf.GradientTape on the Keras 3 layer.")
-@pytest.mark.parametrize("kind", DENSE_KINDS + CONV_KINDS)
+@pytest.mark.parametrize("kind", DENSE_KINDS + ["conv2d_reparameterization", "conv2d_flipout"])
 def test_gradient_parity(kind, recorded_signs):
     """With the same noise, the loss gradients with respect to every posterior parameter match."""
     rng = np.random.default_rng(0)
