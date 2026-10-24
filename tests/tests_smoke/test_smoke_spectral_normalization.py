@@ -10,6 +10,8 @@ The spectral norm magnitude and Lipschitz tests are ported from TensorFlow Model
     In _International Conference on Learning Representations_, 2019.
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -127,6 +129,28 @@ def test_reparameterization_inference_is_bounded():
     out2 = ops.convert_to_numpy(sn(x2, training=False))
     ratios = np.linalg.norm(out2 - out1, axis=-1) / np.linalg.norm(x2 - x1, axis=-1)
     assert ratios.max() <= 0.5 * 1.001
+
+
+@pytest.mark.parametrize(
+    "make_wrapper",
+    [
+        lambda mode: SpectralNormalization(keras.layers.Dense(2), mode=mode),
+        lambda mode: SpectralNormalizationConv2D(keras.layers.Conv2D(2, 3), mode=mode),
+    ],
+)
+def test_projection_mode_warns_on_jax(make_wrapper):
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        make_wrapper("projection")
+    messages = [str(w.message) for w in caught if 'mode="reparameterization"' in str(w.message)]
+    assert len(messages) == (1 if keras.backend.backend() == "jax" else 0)
+    # The warning points at the caller, not at this module.
+    assert all(w.filename == __file__ for w in caught if 'mode="reparameterization"' in str(w.message))
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        make_wrapper("reparameterization")
+    assert not [w for w in caught if 'mode="reparameterization"' in str(w.message)]
 
 
 def test_invalid_mode():

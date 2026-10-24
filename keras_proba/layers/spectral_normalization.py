@@ -38,6 +38,7 @@ where c is `norm_multiplier`. Two modes are supported:
 """
 
 import math
+import warnings
 
 import keras
 from keras import ops
@@ -67,9 +68,18 @@ def _assign_straight_through(variable, value):
 _SUPPORTED_MODES = ("projection", "reparameterization")
 
 
-def _validate_mode(mode):
+def _validate_mode(mode, wrapper_name):
     if mode not in _SUPPORTED_MODES:
         raise ValueError(f"`mode` must be one of {_SUPPORTED_MODES}. Received: {mode}")
+    if mode == "projection" and keras.backend.backend() == "jax":
+        warnings.warn(
+            f'{wrapper_name} with mode="projection" on the JAX backend: JAX discards '
+            "assignments to trainable variables inside `fit`, so the projected kernel "
+            "is not persisted between steps. Each forward pass is still normalized, "
+            "but training differs from the TensorFlow and PyTorch backends. Use "
+            'mode="reparameterization" for identical behavior on all backends.',
+            stacklevel=3,
+        )
 
 
 def _call_with_kernel(layer, kernel, inputs):
@@ -127,7 +137,7 @@ class SpectralNormalization(keras.layers.Wrapper):
         mode="projection",
         **kwargs,
     ):
-        _validate_mode(mode)
+        _validate_mode(mode, type(self).__name__)
         self.iteration = iteration
         self.do_power_iteration = training
         self.aggregation = aggregation
@@ -271,7 +281,7 @@ class SpectralNormalizationConv2D(keras.layers.Wrapper):
         mode="projection",
         **kwargs,
     ):
-        _validate_mode(mode)
+        _validate_mode(mode, type(self).__name__)
         self.iteration = iteration
         self.do_power_iteration = training
         self.aggregation = aggregation
