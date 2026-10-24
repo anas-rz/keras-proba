@@ -1,21 +1,33 @@
 # Keras Probability: Uncertainty Awareness in Deep Learning
 
-Should be available via `pip install git+https://github.com/anas-rz/keras-proba.git`
+Install directly from GitHub:
 
-# Layers
+```bash
+pip install "git+https://github.com/anas-rz/keras-proba.git"
+```
 
-*  [ ] SNGP
- 
+## Layers
 
+- [ ] `RandomFourierFeatures`
+- [ ] `GaussianProcess` output layer
+- [ ] `SpectralNormalization`
+- [ ] `GaussianHead` for probabilistic regression
 
-# Post-processing
+## Post-processing
 
-* [ ] Calibration, Conformal Prediction, etc.
+- [ ] Temperature scaling for classification calibration
+- [ ] Split conformal prediction for classification and regression
 
-# Existing Models (If any)
+## Models and Examples
 
+- [ ] SNGP classifier example
+- [ ] SNGP regressor example
+- [ ] Calibrated classifier example
+- [ ] Conformal prediction example
 
-# Tests
-* [ ] Parity
-* [ ] Training
-* [ ] Smoke Tests
+## Tests
+
+- [ ] Parity tests across supported Keras backends
+- [ ] Training tests
+- [ ] Smoke tests
+- [ ] Serialization and reload tests
