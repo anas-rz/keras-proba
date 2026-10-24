@@ -1,0 +1,42 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.backend }} / py${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [tensorflow, jax, torch]
+        python-version: ["3.12"]
+    env:
+      KERAS_BACKEND: ${{ matrix.backend }}
+      TF_CPP_MIN_LOG_LEVEL: "3"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # CPU-only torch keeps the install small.
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          # TensorFlow and tf_keras are needed by every backend: tf_keras is the parity reference.
+          pip install keras tensorflow tf_keras jax numpy pytest
+
+      - name: Run tests
+        run: python -m pytest tests -v
