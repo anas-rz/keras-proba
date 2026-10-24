@@ -27,7 +27,7 @@ pip install "git+https://github.com/anas-rz/keras-proba.git"
 
 ## Tests
 
-- [ ] Parity tests across supported Keras backends
-- [ ] Training tests
-- [ ] Smoke tests
+- [ ] Parity tests with original implementation
+- [ ] Training tests across backends
+- [ ] Smoke tests across backends
 - [ ] Serialization and reload tests
