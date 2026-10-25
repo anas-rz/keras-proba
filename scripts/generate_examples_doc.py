@@ -28,7 +28,8 @@ TASKS = {
         "title": "Forecasting",
         "icon": ":material-weather-partly-cloudy:",
         "dataset": "Jena climate",
-        "description": "Forecast the temperature 24 hours ahead from the last 48 hours of weather measurements.",
+        "description": "Forecast the temperature 24 hours ahead: at a weather station from its last 48 hours of "
+        "measurements, or everywhere on Earth with a pre-trained global weather model.",
     },
     "regression": {
         "title": "Regression",
@@ -42,6 +43,10 @@ TASKS = {
         "dataset": "Fashion-MNIST, MNIST",
         "description": "Classify clothing images, and recognize inputs unlike the training data (handwritten digits).",
     },
+}
+# Notebooks whose dataset differs from their task's.
+DATASETS = {
+    "pretrained_fourcastnet_conformal": "ERA5 (WeatherBench 2)",
 }
 GROUPS = {
     "training": ("Training", "Make the model itself uncertainty-aware."),
@@ -82,6 +87,7 @@ def notebook_meta(path):
         "techniques": techniques,
         "task": task,
         "group": group,
+        "dataset": DATASETS.get(stem, TASKS[task]["dataset"]) if task in TASKS else None,
         "stem": stem,
         "doc_file": f"{stem}.md",
         "github_url": f"{REPO_URL}/{path}",
@@ -114,7 +120,7 @@ def example_page(path, meta):
         f"# {meta['title']}",
         "",
         f"**Backend:** TensorFlow, JAX or PyTorch<br>",
-        f"**Dataset:** {task['dataset']}<br>",
+        f"**Dataset:** {meta['dataset']}<br>",
         f"**Techniques:** {', '.join(f'`{t}`' for t in meta['techniques'])}",
         "",
         f'[:simple-googlecolab: **View in Colab**]({meta["colab_url"]}){{ .md-button .md-button--primary }} &nbsp; '
@@ -159,7 +165,7 @@ def task_page(task, examples):
     lines = [
         f"# {meta['title']}",
         "",
-        f"{meta['description']} Dataset: {meta['dataset']}.",
+        f"{meta['description']} Dataset: {', '.join(dict.fromkeys(e['dataset'] for e in examples))}.",
         "",
         "[:octicons-arrow-left-24: All examples](index.md)",
         "",

@@ -7,13 +7,14 @@ in the [documentation](https://anas-rz.github.io/keras-proba/examples/).
 `training/` notebooks make the model itself uncertainty-aware; `postprocessing/` notebooks add
 calibrated uncertainty to an already trained model, without retraining it.
 
-## Forecasting: temperature 24 hours ahead ([Jena climate](https://www.bgc-jena.mpg.de/wetter/))
+## Forecasting: temperature 24 hours ahead ([Jena climate](https://www.bgc-jena.mpg.de/wetter/), [ERA5](https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5))
 
 | Notebook | Technique | |
 |---|---|---|
 | [Probabilistic forecasting](forecasting/training/probabilistic_forecasting.ipynb) | Predict a mean and a standard deviation with `GaussianHead` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anas-rz/keras-proba/blob/main/examples/forecasting/training/probabilistic_forecasting.ipynb) |
 | [Bayesian forecasting](forecasting/training/bayesian_forecasting.ipynb) | Separate noise from model uncertainty with Bayesian `Conv1DFlipout` layers | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anas-rz/keras-proba/blob/main/examples/forecasting/training/bayesian_forecasting.ipynb) |
 | [Conformal forecast intervals](forecasting/postprocessing/conformal_forecast_intervals.ipynb) | Add guaranteed intervals to a point forecaster with `SplitConformalRegressor` | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anas-rz/keras-proba/blob/main/examples/forecasting/postprocessing/conformal_forecast_intervals.ipynb) |
+| [Probabilistic forecasts from a pre-trained FourCastNet](forecasting/postprocessing/pretrained_fourcastnet_conformal.ipynb) | 90% intervals at every grid point for a pre-trained global weather model ([keras-climate](https://github.com/anas-rz/keras-climate), [ERA5](https://weatherbench2.readthedocs.io/)), with no training; needs a GPU runtime | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/anas-rz/keras-proba/blob/main/examples/forecasting/postprocessing/pretrained_fourcastnet_conformal.ipynb) |
 
 ## Regression: house values ([California housing](https://www.dcc.fc.up.pt/~ltorgo/Regression/cal_housing.html))
 
